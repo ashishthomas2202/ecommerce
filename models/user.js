@@ -26,12 +26,12 @@ const userSchema = new mongoose.Schema({
         type: String,
         required: true,
     },
-    profile: {
-        type: String,
-        trim: true,
-        required: true,
-        maxlength: 32,
-    },
+    // profile: {
+    //     type: String,
+    //     trim: true,
+    //     required: true,
+    //     maxlength: 32,
+    // },
     salt: String,
     role: {
         type: Number,
@@ -40,7 +40,8 @@ const userSchema = new mongoose.Schema({
 }, { timestamps: true });
 
 userSchema.virtual('password')
-    .set(function() {
+    .set(function(password) {
+        console.log("Hi");
         this._password = password;
         this.salt = uuidv4();
         this.hashed_password = this.encryptPassword(password);
