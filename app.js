@@ -24,6 +24,7 @@ mongoose.connect(process.env.DATABASE, {
 //Middlewares
 app.use(morgan('dev'));
 app.use(express.json());
+app.use(cookieParser());
 
 //Routes Middleware
 app.use('/api', authRoutes);
