@@ -1,9 +1,19 @@
 //Imports
 const express = require('express');
+const mongoose = require('mongoose');
 require('dotenv').config();
 
 //App
 const app = express();
+
+//Database
+mongoose.connect(process.env.DATABASE, {
+    useNewUrlParser: true,
+    useCreateIndex: true,
+    useUnifiedTopology: true,
+}).then(function() {
+    console.log("DB is connected");
+});
 
 //Routes
 app.get('/', function(req, res) {
