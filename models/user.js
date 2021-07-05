@@ -38,3 +38,29 @@ const userSchema = new mongoose.Schema({
         default: 0,
     }
 }, { timestamps: true });
+
+userSchema.virtual('password')
+    .set(function() {
+        this._password = password;
+        this.salt = uuidv4();
+        this.hashed_password = this.encryptPassword(password);
+    })
+    .get(function() {
+        return this._password;
+    });
+
+userSchema.methods = {
+    encryptPassword: function(password) {
+
+        if (!password)
+            return '';
+
+        try {
+            return crypto.HmacSHA256(password, this.salt);
+        } catch (err) {
+            return { err };
+        }
+    }
+}
+
+module.exports = mongoose.model('User', userSchema);
