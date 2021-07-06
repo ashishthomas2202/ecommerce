@@ -41,13 +41,17 @@ const userSchema = new mongoose.Schema({
 
 userSchema.virtual('password')
     .set(function(password) {
-        console.log("Hi");
         this._password = password;
         this.salt = uuidv4();
         this.hashed_password = this.encryptPassword(password);
     })
     .get(function() {
         return this._password;
+    });
+
+userSchema.virtual('fullname')
+    .get(function() {
+        return firstName + " " + lastName;
     });
 
 userSchema.methods = {
