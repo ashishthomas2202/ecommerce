@@ -3,19 +3,29 @@
 /**
  * Get unique error field name
  */
-const uniqueMessage = error => {
-    let output;
+const uniqueOutput = error => {
+    let output = {};
     try {
         let fieldName = error.message.substring(
-            error.message.lastIndexOf(".$") + 2,
+            error.message.lastIndexOf("index: ") + 7,
             error.message.lastIndexOf("_1")
         );
-        output =
+        let value = error.message.substring(
+            error.message.lastIndexOf("{ " + fieldName) + fieldName.length + 5,
+            error.message.lastIndexOf("\"")
+        );
+
+        output["msg"] =
             fieldName.charAt(0).toUpperCase() +
             fieldName.slice(1) +
             " already exists";
+
+        output["value"] = value;
+        output["param"] = fieldName;
+
+
     } catch (ex) {
-        output = "Unique field already exists";
+        output["msg"] = "Unique field already exists";
     }
 
     return output;
@@ -25,23 +35,30 @@ const uniqueMessage = error => {
  * Get the erroror message from error object
  */
 exports.errorHandler = error => {
-    let message = "";
+    let output = [];
+    let err = {};
 
     if (error.code) {
         switch (error.code) {
             case 11000:
             case 11001:
-                message = uniqueMessage(error);
+                err = uniqueOutput(error);
                 break;
             default:
-                message = "Something went wrong";
+                err["msg"] = "Something went wrong";
         }
+        output.push(err);
+
     } else {
         for (let errorName in error.errorors) {
-            if (error.errorors[errorName].message)
-                message = error.errorors[errorName].message;
+            if (error.errorors[errorName].message) {
+                err["msg"] = error.errorors[errorName].message;
+                err["param"] = errorName;
+            }
+            output.push(err);
+            err = {};
         }
     }
 
-    return message;
+    return output;
 };

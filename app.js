@@ -3,6 +3,7 @@ const express = require('express');
 const mongoose = require('mongoose');
 const morgan = require('morgan');
 const cookieParser = require('cookie-parser');
+// const expressValidator = require('express-validator');
 require('dotenv').config();
 
 //Import Routes
@@ -25,6 +26,7 @@ mongoose.connect(process.env.DATABASE, {
 app.use(morgan('dev'));
 app.use(express.json());
 app.use(cookieParser());
+// app.use(expressValidator());
 
 //Routes Middleware
 app.use('/api', authRoutes);
