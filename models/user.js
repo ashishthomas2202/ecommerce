@@ -55,6 +55,11 @@ userSchema.virtual('fullname')
     });
 
 userSchema.methods = {
+    authenticate: function(plainText) {
+        let pass = this.encryptPassword(plainText).toString();
+        return pass === this.hashed_password;
+    },
+
     encryptPassword: function(password) {
 
         if (!password)

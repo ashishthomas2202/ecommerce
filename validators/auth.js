@@ -10,6 +10,11 @@ exports.createValidator = function(route) {
                 body('email').notEmpty().withMessage('Email is required').normalizeEmail().isEmail().withMessage("Email is invalid"),
                 body('password').notEmpty().withMessage('Password is required').isLength({ min: 6, max: 40 }).withMessage("Password must be between 6 to 40 characters")
             ];
+        case 'signin':
+            return [
+                body('email').notEmpty().withMessage('Email is required').normalizeEmail().isEmail().withMessage("Email is invalid"),
+                body('password').notEmpty().withMessage('Password is required').isLength({ min: 6, max: 40 }).withMessage("Password must be between 6 to 40 characters")
+            ];
 
         default:
             return [];
