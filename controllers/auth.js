@@ -79,6 +79,10 @@ exports.signin = function(req, res) {
             }
         });
 
-
     });
+};
+
+exports.signout = function(req, res) {
+    res.clearCookie("ua");
+    res.json({ message: "Signed out successfully" });
 };
