@@ -104,16 +104,17 @@ exports.isAuth = function(req, res, next) {
             authRole = usr.role;
         }
 
+        console.log(user);
         console.log(authRole);
-        if (authRole !== 100)
-            if (!user) {
-                return res.status(403).json({
-                    "errors": [{
-                        "msg": "Access Denied",
-                        "param": "user"
-                    }]
-                });
-            }
+
+        if (!user && authRole !== 100) {
+            return res.status(403).json({
+                "errors": [{
+                    "msg": "Access Denied",
+                    "param": "user"
+                }]
+            });
+        }
         next();
     });
 
@@ -142,4 +143,35 @@ exports.isAdmin = function(req, res, next) {
         next();
     });
 
+
+}
+
+
+exports.isEmployee = function(level) {
+
+    return function(req, res, next) {
+
+        let authUserId = req.auth._id;
+        let authRole = 0;
+
+        User.findById(authUserId).exec(function(err, usr) {
+            if (!err) {
+                authRole = usr.role;
+
+            }
+
+            if (authRole < level) {
+                return res.status(403).json({
+                    "errors": [{
+                        "msg": "Company resource! Access Denied",
+                        "param": "user"
+                    }]
+                });
+            }
+
+            next();
+        });
+
+
+    };
 }
