@@ -8,6 +8,8 @@ require('dotenv').config();
 
 //Import Routes
 const authRoutes = require('./routes/auth');
+const userRoutes = require('./routes/user');
+
 
 //App
 const app = express();
@@ -30,6 +32,8 @@ app.use(cookieParser());
 
 //Routes Middleware
 app.use('/api', authRoutes);
+app.use('/api', userRoutes);
+
 
 
 //Routes
