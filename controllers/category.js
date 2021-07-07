@@ -45,3 +45,21 @@ exports.update = function(req, res) {
     });
 
 };
+
+exports.remove = function(req, res) {
+
+    const category = req.category;
+    console.log(req.category);
+    category.remove(function(err, deletedCategory) {
+        if (err) {
+            return res.status(400).json({
+                "errors": errorHandler(err)
+            });
+        }
+        res.json({
+            deletedCategory,
+            message: "Category deleted successfully"
+        });
+    });
+
+};
