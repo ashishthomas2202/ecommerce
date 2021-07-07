@@ -92,3 +92,30 @@ exports.requireSignin = expressJwt({
     algorithms: ["HS256"],
     userProperty: "auth"
 });
+
+exports.isAuth = function(req, res, next) {
+    let user = req.profile && req.auth && req.profile._id == req.auth._id;
+
+    let authUserId = req.auth._id;
+    let authRole = 0;
+
+    User.findById(authUserId).exec(function(err, usr) {
+        if (!err) {
+            authRole = usr.role;
+        }
+
+        console.log(authRole);
+        if (authRole !== 100)
+            if (!user) {
+                return res.status(403).json({
+                    "errors": [{
+                        "msg": "Access Denied",
+                        "param": "user"
+                    }]
+                });
+            }
+        next();
+    });
+
+
+}
