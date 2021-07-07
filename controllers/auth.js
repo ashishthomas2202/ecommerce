@@ -119,3 +119,27 @@ exports.isAuth = function(req, res, next) {
 
 
 }
+
+exports.isAdmin = function(req, res, next) {
+
+    let authUserId = req.auth._id;
+    let authRole = 0;
+
+    User.findById(authUserId).exec(function(err, usr) {
+        if (!err) {
+            authRole = usr.role;
+
+        }
+
+        if (authRole != 100) {
+            return res.status(403).json({
+                "errors": [{
+                    "msg": "Admin resource! Access Denied",
+                    "param": "user"
+                }]
+            });
+        }
+        next();
+    });
+
+}
