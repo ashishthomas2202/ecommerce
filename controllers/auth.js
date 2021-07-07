@@ -18,7 +18,6 @@ exports.signup = function(req, res) {
                 "errors": errorHandler(err)
             });
         }
-
         user.salt = undefined;
         user.hashed_password = undefined;
         res.json({
@@ -47,14 +46,12 @@ exports.signin = function(req, res) {
         if (!user.authenticate(password)) {
             return res.status(401).json({
                 "errors": [{
-                        "msg": "Email and password dont match",
-                        "param": "email"
-                    }, {
-                        "msg": "Email and password dont match",
-                        "param": "password"
-                    }
-
-                ]
+                    "msg": "Email and password dont match",
+                    "param": "email"
+                }, {
+                    "msg": "Email and password dont match",
+                    "param": "password"
+                }]
             });
         }
         // generate a signed token with user id and secret
@@ -78,7 +75,6 @@ exports.signin = function(req, res) {
                 role
             }
         });
-
     });
 };
 
@@ -103,10 +99,6 @@ exports.isAuth = function(req, res, next) {
         if (!err) {
             authRole = usr.role;
         }
-
-        console.log(user);
-        console.log(authRole);
-
         if (!user && authRole !== 100) {
             return res.status(403).json({
                 "errors": [{
@@ -117,8 +109,6 @@ exports.isAuth = function(req, res, next) {
         }
         next();
     });
-
-
 }
 
 exports.isAdmin = function(req, res, next) {
@@ -129,9 +119,7 @@ exports.isAdmin = function(req, res, next) {
     User.findById(authUserId).exec(function(err, usr) {
         if (!err) {
             authRole = usr.role;
-
         }
-
         if (authRole != 100) {
             return res.status(403).json({
                 "errors": [{
@@ -142,8 +130,6 @@ exports.isAdmin = function(req, res, next) {
         }
         next();
     });
-
-
 }
 
 
@@ -157,9 +143,7 @@ exports.isEmployee = function(level) {
         User.findById(authUserId).exec(function(err, usr) {
             if (!err) {
                 authRole = usr.role;
-
             }
-
             if (authRole < level) {
                 return res.status(403).json({
                     "errors": [{
@@ -168,10 +152,7 @@ exports.isEmployee = function(level) {
                     }]
                 });
             }
-
             next();
         });
-
-
     };
 }
