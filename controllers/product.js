@@ -4,6 +4,8 @@ const Product = require('../models/product');
 const fs = require('fs');
 const path = require('path');
 
+const { errorHandler } = require('../helpers/dbErrorHandler');
+
 exports.create = function(req, res) {
 
 
@@ -111,20 +113,23 @@ exports.create = function(req, res) {
             amount: fields.discountAmount,
             symbol: fields.discountSymbol
         };
-        product.discription = fields.description;
+        product.description = fields.description;
 
-        console.log(fields.additionalInfoTitle);
+        product.save(function(err, data) {
+            if (err) {
+
+                if (images.length != 0)
+                    removeDir(folderName);
+
+                return res.status(400).json({
+                    "errors": errorHandler(err)
+                });
+            }
+
+            res.json({ data });
+        });
 
 
-
-        console.log(product);
-
-
-
-
-        res.json({ avatar: images });
-
-        //I am here to change the file name uniformly for storage convenience <username>.jpg
 
 
     });
