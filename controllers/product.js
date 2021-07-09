@@ -97,7 +97,7 @@ exports.create = function(req, res) {
         }
 
 
-
+        console.log(fields);
         const product = new Product();
 
         product.sku = fields.sku;
@@ -109,11 +109,11 @@ exports.create = function(req, res) {
         product.margin = fields.margin;
         product.stickerPrice = fields.stickerPrice;
         product.onSale = fields.onSale;
-        product.discount = {
-            amount: fields.discountAmount,
-            symbol: fields.discountSymbol
-        };
+        product.discount = fields.discount;
         product.description = fields.description;
+        product.additionalInfo = fields.additionalInfo;
+        product.productOptions = fields.productOptions;
+
 
         product.save(function(err, data) {
             if (err) {
