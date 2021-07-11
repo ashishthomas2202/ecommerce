@@ -1,43 +1,30 @@
 const formidable = require('formidable');
-const _ = require('lodash');
-const Product = require('../models/product');
-const fs = require('fs');
 const path = require('path');
+const fs = require('fs');
 
-const { errorHandler } = require('../helpers/dbErrorHandler');
+
+const Product = require('../models/product');
+// const { errorHandler } = require('../helpers/dbErrorHandler');
 
 exports.create = function(req, res) {
 
-
-    // Initializing the form
+    //Initializing the formidable
     let form = new formidable.IncomingForm();
-    form.encoding = 'utf-8'; // code
-    form.keepExtensions = true; // keep the extension
+    form.encoding = 'utf-8';
+    form.keepExtensions = true;
+    //accept multiple files
     form.multiples = true;
-    form.uploadDir = __dirname + '../../'; //File storage path Finally, pay attention to adding '/'  Otherwise it will be stored under public
+    // directory to upload files
+    form.uploadDir = path.join(__dirname, '../public/products');
 
 
-    form.parse(req, (err, fields, files) => { // parse formData data
+    // parsing the form data
+    form.parse(req, function(err, fields, files) {
 
+        // if there is any error occurs in parsing form
         if (err) {
 
-            if (files.images && files.images != '') {
-                // loop to go through every image
-                for (image of files.images) {
-
-                    // Index of first character of the image name 
-                    let imageNameIndex = image.path.lastIndexOf('\\') + 1;
-
-                    // try to remove the image from temperoty location due to the error occurred
-                    try {
-                        //removing the file
-                        fs.unlinkSync(image.path.substring(imageNameIndex));
-
-                    } catch (err) {
-                        console.error(err)
-                    }
-                }
-            }
+            deleteTempImages(files);
 
             return res.status(400).json({
                 "errors": [{
@@ -46,122 +33,81 @@ exports.create = function(req, res) {
                 }]
             });
         }
-        // Folder to save all the images of the product 
-        const folderName = 'public\\products\\' + fields.sku;
 
 
-        createDir(folderName);
+        //***************** Parsing Fields *************************
 
 
-        // An array to store multiple images
-        let images = [];
+        let { sku, name } = fields;
 
-        //if images exist
-        if (files.images && files.images != '') {
-            // loop to go through every image
-            for (image of files.images) {
+        /******** SKU validation ********/
+        // SKU doesn't exist or isEmpty
+        if (checkRequired(sku))
+            return handleProducterrors(res, 'SKU is required', 'SKU', files);
 
-                // temporary location of the image
-                let oldPath = image.path;
-                // index of the dot before the image extension
-                let indexOfDot = image.name.indexOf('.');
-                // Name of the image
-                let name = _.kebabCase(image.name.substring(0, indexOfDot));
-                // location of the image to be stored
-                let location = folderName + '\\';
-                // extension of the image
-                let extension = image.name.substring(indexOfDot);
-                // New location of the image
-                let newPath = path.join(path.dirname(oldPath), location + name + extension);
+        // SKU contains less than 3 characters or  more than 15 characters
+        if (checkLength(sku, 3, 15))
+            return handleProducterrors(res, 'SKU must be between 3 to 15 characters', 'SKU', files);
 
-                // Adding the image info to the array
-                images.push({
-                    name,
-                    extension,
-                    location
-                });
-
-                // moving the image from temporary location to the new location
-                fs.rename(oldPath, newPath, (err) => {
-                    if (err) {
-                        return res.status(400).json({
-                            "errors": [{
-                                "msg": "Image could not be uploaded",
-                                "param": "images"
-                            }]
-                        });
-                    }
-                });
-
-            }
-        }
-
-
-        console.log(fields);
-        const product = new Product();
-
-        product.sku = fields.sku;
-        product.name = fields.name;
-        product.ribbon = fields.ribbon;
-        product.categoryId = fields.categoryId;
-        product.images = images;
-        product.costPrice = fields.costPrice;
-        product.margin = fields.margin;
-        product.stickerPrice = fields.stickerPrice;
-        product.onSale = fields.onSale;
-        product.discount = fields.discount;
-        product.description = fields.description;
-        product.additionalInfo = fields.additionalInfo;
-        product.productOptions = fields.productOptions;
-
-
-        product.save(function(err, data) {
-            if (err) {
-
-                if (images.length != 0)
-                    removeDir(folderName);
-
-                return res.status(400).json({
-                    "errors": errorHandler(err)
-                });
-            }
-
-            res.json({ data });
-        });
+        /******** SKU validation ends ********/
 
 
 
+        /************* name validation *************/
+        // name doesn't exist or isEmpty
+        if (checkRequired(name))
+            return handleProducterrors(res, 'name is required', 'name', files);
 
+        // name contains less than 3 characters or  more than 60 characters
+        if (checkLength(name, 3, 60))
+            return handleProducterrors(res, 'name must be between 3 to 60 characters', 'name', files);
+
+        /************* name validation ends *************/
+
+
+        return res.json({ msg: "success" });
+    });
+
+}
+
+function checkRequired(field) {
+    return !field || field.length == 0;
+}
+
+function checkLength(field, min, max) {
+
+    // trimming the extra space before and after the field
+    field = field.trim();
+    return field.length < min || field.length > max;
+}
+
+function handleProducterrors(res, msg, param, files) {
+
+    deleteTempImages(files);
+
+    res.status(400).json({
+        "errors": [{
+            "msg": msg,
+            "param": param
+        }]
     });
 }
 
-// This method will create the directory
-// @param: String with the folder name starting from root
-function createDir(directoryPath) {
-    // Create the folder if not created yet
-    try {
-        if (!fs.existsSync(directoryPath)) {
-            fs.mkdirSync(directoryPath);
-        }
-    } catch (err) {
-        console.error(err);
-    }
-}
+function deleteTempImages(files) {
+    // files are uploaded which needs to be deleted because of error
+    if (files.images && files.images != '') {
 
-// This method will remove the directory
-// @param: String with the folder name starting from root
-function removeDir(directoryPath) {
-    if (fs.existsSync(directoryPath)) {
-        fs.readdirSync(directoryPath).forEach((file, index) => {
-            const curPath = path.join(directoryPath, file);
-            if (fs.lstatSync(curPath).isDirectory()) {
-                // recurse
-                deleteFolderRecursive(curPath);
-            } else {
-                // delete file
-                fs.unlinkSync(curPath);
+        // loop to go through every image
+        for (image of files.images) {
+
+            // try to remove the image from temporary location 
+            try {
+                //removing the file
+                fs.unlinkSync(image.path);
+
+            } catch (err) {
+                console.log(err);
             }
-        });
-        fs.rmdirSync(directoryPath);
+        }
     }
 }

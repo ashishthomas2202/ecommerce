@@ -6,13 +6,15 @@ const productSchema = new mongoose.Schema({
         type: String,
         trim: true,
         required: true,
-        maxlength: 15
+        maxlength: 15,
+        unique: true
     },
     name: {
         type: String,
         trim: true,
         required: true,
-        maxlength: 60
+        maxlength: 60,
+        unique: true
     },
     ribbon: {
         type: String,
