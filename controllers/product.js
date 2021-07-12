@@ -38,7 +38,7 @@ exports.create = function(req, res) {
         //***************** Parsing Fields *************************
 
 
-        let { sku, name, ribbon, categoryId, costPrice } = fields;
+        let { sku, name, ribbon, categoryId, costPrice, margin } = fields;
 
         /******** sku validation ********/
         // sku doesn't exist or isEmpty
@@ -77,7 +77,7 @@ exports.create = function(req, res) {
         /************* categoryId validation ends *************/
 
 
-        /************* name validation *************/
+        /************* costPrice validation *************/
         // costPrice doesn't exist or isEmpty
         if (checkRequired(costPrice))
             return handleProducterrors(res, 'costPrice is required', 'costPrice', files);
@@ -86,6 +86,17 @@ exports.create = function(req, res) {
         if (!checkValue(costPrice, 0.01, 99999.99))
             return handleProducterrors(res, 'costPrice must be greater than 0.01 and less than 99999.99', 'costPrice', files);
         /************* costPrice validation ends *************/
+
+
+        /************* margin validation *************/
+        // margin doesn't exist or isEmpty
+        if (checkRequired(margin))
+            return handleProducterrors(res, 'margin is required', 'margin', files);
+
+        // margin must be greater than 0 and less than 99999
+        if (!checkValue(margin, 0.01, 99999.99))
+            return handleProducterrors(res, 'margin must be greater than 0.01 and less than 99999.99', 'margin', files);
+        /************* margin validation ends *************/
 
         return res.json({ msg: "success" });
     });
