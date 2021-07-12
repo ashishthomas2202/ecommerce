@@ -38,7 +38,7 @@ exports.create = function(req, res) {
         //***************** Parsing Fields *************************
 
 
-        let { sku, name, ribbon, categoryId, costPrice, margin, stickerPrice, onSale, discount, description, additionalInfo } = fields;
+        let { sku, name, ribbon, categoryId, costPrice, margin, stickerPrice, onSale, discount, description, additionalInfo, productOptions } = fields;
 
 
 
@@ -133,6 +133,7 @@ exports.create = function(req, res) {
         /************* discount validation *************/
         if (discount) {
             try {
+                // parsing data in json format
                 discount = JSON.parse(discount);
 
                 // discount.amount doesn't exist or isEmpty
@@ -175,9 +176,10 @@ exports.create = function(req, res) {
         /************* additionalInfo validation *************/
         if (additionalInfo) {
             try {
+                //parsing data in json format
                 additionalInfo = JSON.parse(additionalInfo);
-                console.log(additionalInfo);
 
+                // loop to go through each additionalInfo
                 for (let info of additionalInfo) {
 
                     // info.title doesn't exist or isEmpty
@@ -199,6 +201,48 @@ exports.create = function(req, res) {
             }
         }
         /************* additionalInfo validation ends *************/
+
+
+
+        /************* productOptions validation *************/
+        if (productOptions) {
+            try {
+                //parsing data in json format
+                productOptions = JSON.parse(productOptions);
+
+                // loop to go through each productOptions
+                for (let option of productOptions) {
+                    console.log(option);
+                    // option.optionTitle doesn't exist or isEmpty
+                    if (checkRequired(option.optionTitle))
+                        return handleProducterrors(res, 'optionTitle is required', 'optionTitle', files);
+                    // option.optionTitle must be between 3 to 32 characters
+                    if (!checkLength(option.optionTitle, 3, 32))
+                        return handleProducterrors(res, 'optionTitle must be between 3 to 32 characters', 'optionTitle', files);
+
+                    // option.varients doesn't exist or isEmpty
+                    if (checkRequired(option.varients))
+                        return handleProducterrors(res, 'varients is required', 'varients', files);
+
+                    //loop to go through each varient
+                    for (let varient of option.varients) {
+
+                        // varient.name doesn't exist or isEmpty
+                        if (checkRequired(varient.name))
+                            return handleProducterrors(res, 'varient name is required', 'varient name', files);
+                        // varient.name must be between 3 to 32 characters
+                        if (!checkLength(varient.name, 3, 32))
+                            return handleProducterrors(res, 'varient name must be between 3 to 32 characters', 'varient name', files);
+
+
+                    }
+
+                }
+            } catch (err) {
+                return handleProducterrors(res, 'productOptions format is invalid', 'productOptions', files);
+            }
+        }
+        /************* productOptions validation ends *************/
 
 
         return res.json({ msg: "success" });
