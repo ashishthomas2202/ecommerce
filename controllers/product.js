@@ -38,7 +38,7 @@ exports.create = function(req, res) {
         //***************** Parsing Fields *************************
 
 
-        let { sku, name, ribbon, categoryId, costPrice, margin, stickerPrice, onSale } = fields;
+        let { sku, name, ribbon, categoryId, costPrice, margin, stickerPrice, onSale, discount } = fields;
 
 
 
@@ -88,8 +88,8 @@ exports.create = function(req, res) {
             return handleProducterrors(res, 'costPrice is required', 'costPrice', files);
 
         // costPrice must be greater than 0 and less than 99999
-        if (!checkValue(costPrice, 0.01, 99999.99))
-            return handleProducterrors(res, 'costPrice must be greater than 0.01 and less than 99999.99', 'costPrice', files);
+        if (!checkValue(costPrice, 0.01, 99999))
+            return handleProducterrors(res, 'costPrice must be greater than 0.01 and less than 99999', 'costPrice', files);
         /************* costPrice validation ends *************/
 
 
@@ -100,8 +100,8 @@ exports.create = function(req, res) {
             return handleProducterrors(res, 'margin is required', 'margin', files);
 
         // margin must be greater than 0 and less than 99999
-        if (!checkValue(margin, 0.01, 99999.99))
-            return handleProducterrors(res, 'margin must be greater than 0.01 and less than 99999.99', 'margin', files);
+        if (!checkValue(margin, 0.01, 99999))
+            return handleProducterrors(res, 'margin must be greater than 0.01 and less than 99999', 'margin', files);
         /************* margin validation ends *************/
 
 
@@ -112,8 +112,8 @@ exports.create = function(req, res) {
             return handleProducterrors(res, 'stickerPrice is required', 'stickerPrice', files);
 
         // stickerPrice must be greater than 0 and less than 99999
-        if (!checkValue(stickerPrice, 0.01, 99999.99))
-            return handleProducterrors(res, 'stickerPrice must be greater than 0.01 and less than 99999.99', 'stickerPrice', files);
+        if (!checkValue(stickerPrice, 0.01, 99999))
+            return handleProducterrors(res, 'stickerPrice must be greater than 0.01 and less than 99999', 'stickerPrice', files);
         /************* stickerPrice validation ends *************/
 
 
@@ -129,6 +129,35 @@ exports.create = function(req, res) {
         /************* onSale validation ends *************/
 
 
+
+
+        /************* discount validation *************/
+        if (discount) {
+            try {
+                discount = JSON.parse(discount);
+
+                // discount.amount doesn't exist or isEmpty
+                if (checkRequired(discount.amount))
+                    return handleProducterrors(res, 'discount amount is required', 'discount amount', files);
+                // discount.amount must be greater than 0 and less than 99999
+                if (!checkValue(discount.amount, 0.01, 99999))
+                    return handleProducterrors(res, 'discount amount must be greater than 0.01 and less than 99999', 'discount amount', files);
+
+                // discount.symbol doesn't exist or isEmpty
+                if (checkRequired(discount.symbol))
+                    return handleProducterrors(res, 'discount symbol is required', 'discount symbol', files);
+                // discount.symbol contain 1 character only
+                if (!checkLength(discount.symbol, 1, 1))
+                    return handleProducterrors(res, 'discount symbol must contain only 1 character ( % or $ )', 'discount symbol', files);
+
+                if (!(discount.symbol === '$' || discount.symbol === '%'))
+                    return handleProducterrors(res, 'discount symbol must be % or $', 'discount symbol', files);
+
+            } catch (err) {
+                return handleProducterrors(res, 'discount format is invalid', 'discount', files);
+            }
+        }
+        /************* discount validation ends *************/
 
 
 
