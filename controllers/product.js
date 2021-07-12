@@ -38,7 +38,9 @@ exports.create = function(req, res) {
         //***************** Parsing Fields *************************
 
 
-        let { sku, name, ribbon, categoryId, costPrice, margin } = fields;
+        let { sku, name, ribbon, categoryId, costPrice, margin, stickerPrice, onSale } = fields;
+
+
 
         /******** sku validation ********/
         // sku doesn't exist or isEmpty
@@ -63,6 +65,7 @@ exports.create = function(req, res) {
         /************* name validation ends *************/
 
 
+
         /************* ribbon validation *************/
         // ribbon contains less than 3 characters or  more than 60 characters
         if (!checkLength(ribbon, 3, 20))
@@ -70,11 +73,13 @@ exports.create = function(req, res) {
         /************* ribbon validation ends *************/
 
 
+
         /************* categoryId validation *************/
         // categoryId doesn't exist or isEmpty
         if (checkRequired(categoryId))
             return handleProducterrors(res, 'categoryId is required', 'categoryId', files);
         /************* categoryId validation ends *************/
+
 
 
         /************* costPrice validation *************/
@@ -88,6 +93,7 @@ exports.create = function(req, res) {
         /************* costPrice validation ends *************/
 
 
+
         /************* margin validation *************/
         // margin doesn't exist or isEmpty
         if (checkRequired(margin))
@@ -98,10 +104,39 @@ exports.create = function(req, res) {
             return handleProducterrors(res, 'margin must be greater than 0.01 and less than 99999.99', 'margin', files);
         /************* margin validation ends *************/
 
+
+
+        /************* stickerPrice validation *************/
+        // stickerPrice doesn't exist or isEmpty
+        if (checkRequired(stickerPrice))
+            return handleProducterrors(res, 'stickerPrice is required', 'stickerPrice', files);
+
+        // stickerPrice must be greater than 0 and less than 99999
+        if (!checkValue(stickerPrice, 0.01, 99999.99))
+            return handleProducterrors(res, 'stickerPrice must be greater than 0.01 and less than 99999.99', 'stickerPrice', files);
+        /************* stickerPrice validation ends *************/
+
+
+
+        /************* onSale validation *************/
+        if (onSale) {
+            // trimming all the space before and after onSale
+            onSale = onSale.trim();
+            //check if the value is either true or false
+            if (!(onSale.toLowerCase() === 'true' || onSale.toLowerCase() === 'false'))
+                return handleProducterrors(res, 'onSale must be either true or false', 'onSale', files);
+        }
+        /************* onSale validation ends *************/
+
+
+
+
+
         return res.json({ msg: "success" });
     });
-
 }
+
+
 
 /**
  * checkRequired function
@@ -112,6 +147,7 @@ exports.create = function(req, res) {
 function checkRequired(field) {
     return !field || field.length == 0;
 }
+
 
 
 /**
@@ -132,6 +168,7 @@ function checkLength(field, min, max) {
     field = field.trim();
     return field.length >= min && field.length <= max;
 }
+
 
 
 /**
@@ -161,6 +198,7 @@ function checkValue(field, min, max) {
 }
 
 
+
 /**
  * handleProducterrors function
  * This function will delete the images and send response
@@ -181,6 +219,7 @@ function handleProducterrors(res, msg, param, files) {
         }]
     });
 }
+
 
 
 /**
