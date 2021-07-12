@@ -38,18 +38,17 @@ exports.create = function(req, res) {
         //***************** Parsing Fields *************************
 
 
-        let { sku, name } = fields;
+        let { sku, name, ribbon, categoryId } = fields;
 
-        /******** SKU validation ********/
-        // SKU doesn't exist or isEmpty
+        /******** sku validation ********/
+        // sku doesn't exist or isEmpty
         if (checkRequired(sku))
-            return handleProducterrors(res, 'SKU is required', 'SKU', files);
+            return handleProducterrors(res, 'sku is required', 'sku', files);
 
-        // SKU contains less than 3 characters or  more than 15 characters
+        // sku contains less than 3 characters or  more than 15 characters
         if (checkLength(sku, 3, 15))
-            return handleProducterrors(res, 'SKU must be between 3 to 15 characters', 'SKU', files);
-
-        /******** SKU validation ends ********/
+            return handleProducterrors(res, 'sku must be between 3 to 15 characters', 'sku', files);
+        /******** sku validation ends ********/
 
 
 
@@ -61,9 +60,21 @@ exports.create = function(req, res) {
         // name contains less than 3 characters or  more than 60 characters
         if (checkLength(name, 3, 60))
             return handleProducterrors(res, 'name must be between 3 to 60 characters', 'name', files);
-
         /************* name validation ends *************/
 
+
+        /************* ribbon validation *************/
+        // ribbon contains less than 3 characters or  more than 60 characters
+        if (checkLength(ribbon, 3, 20))
+            return handleProducterrors(res, 'ribbon must be between 3 to 20 characters', 'ribbon', files);
+        /************* ribbon validation ends *************/
+
+
+        /************* categoryId validation *************/
+        // categoryId doesn't exist or isEmpty
+        if (checkRequired(categoryId))
+            return handleProducterrors(res, 'categoryId is required', 'categoryId', files);
+        /************* categoryId validation ends *************/
 
         return res.json({ msg: "success" });
     });
@@ -76,6 +87,8 @@ function checkRequired(field) {
 
 function checkLength(field, min, max) {
 
+    if (!field)
+        return false;
     // trimming the extra space before and after the field
     field = field.trim();
     return field.length < min || field.length > max;
