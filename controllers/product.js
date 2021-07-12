@@ -38,7 +38,7 @@ exports.create = function(req, res) {
         //***************** Parsing Fields *************************
 
 
-        let { sku, name, ribbon, categoryId, costPrice, margin, stickerPrice, onSale, discount, description } = fields;
+        let { sku, name, ribbon, categoryId, costPrice, margin, stickerPrice, onSale, discount, description, additionalInfo } = fields;
 
 
 
@@ -169,6 +169,36 @@ exports.create = function(req, res) {
         if (!checkLength(description, 3, 400))
             return handleProducterrors(res, 'description must be between 3 to 400 characters', 'description', files);
         /************* description validation ends *************/
+
+
+
+        /************* additionalInfo validation *************/
+        if (additionalInfo) {
+            try {
+                additionalInfo = JSON.parse(additionalInfo);
+                console.log(additionalInfo);
+
+                for (let info of additionalInfo) {
+
+                    // info.title doesn't exist or isEmpty
+                    if (checkRequired(info.title))
+                        return handleProducterrors(res, 'title is required', 'title', files);
+                    // info.title must be between 3 to 32 characters
+                    if (!checkLength(info.title, 3, 32))
+                        return handleProducterrors(res, 'title must be between 3 to 32 characters', 'title', files);
+
+                    // info.info doesn't exist or isEmpty
+                    if (checkRequired(info.info))
+                        return handleProducterrors(res, 'info is required', 'info', files);
+                    // info.info must be between 3 to 200 characters
+                    if (!checkLength(info.info, 3, 200))
+                        return handleProducterrors(res, 'info must be between 3 to 200 characters', 'info', files);
+                }
+            } catch (err) {
+                return handleProducterrors(res, 'discount format is invalid', 'discount', files);
+            }
+        }
+        /************* additionalInfo validation ends *************/
 
 
         return res.json({ msg: "success" });
