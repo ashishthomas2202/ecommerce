@@ -38,7 +38,7 @@ exports.create = function(req, res) {
         //***************** Parsing Fields *************************
 
 
-        let { sku, name, ribbon, categoryId, costPrice, margin, stickerPrice, onSale, discount } = fields;
+        let { sku, name, ribbon, categoryId, costPrice, margin, stickerPrice, onSale, discount, description } = fields;
 
 
 
@@ -130,7 +130,6 @@ exports.create = function(req, res) {
 
 
 
-
         /************* discount validation *************/
         if (discount) {
             try {
@@ -159,6 +158,17 @@ exports.create = function(req, res) {
         }
         /************* discount validation ends *************/
 
+
+
+        /************* description validation *************/
+        // description doesn't exist or isEmpty
+        if (checkRequired(description))
+            return handleProducterrors(res, 'description is required', 'description', files);
+
+        // description contains less than 3 characters or  more than 400 characters
+        if (!checkLength(description, 3, 400))
+            return handleProducterrors(res, 'description must be between 3 to 400 characters', 'description', files);
+        /************* description validation ends *************/
 
 
         return res.json({ msg: "success" });
