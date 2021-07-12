@@ -38,7 +38,7 @@ exports.create = function(req, res) {
         //***************** Parsing Fields *************************
 
 
-        let { sku, name, ribbon, categoryId } = fields;
+        let { sku, name, ribbon, categoryId, costPrice } = fields;
 
         /******** sku validation ********/
         // sku doesn't exist or isEmpty
@@ -46,7 +46,7 @@ exports.create = function(req, res) {
             return handleProducterrors(res, 'sku is required', 'sku', files);
 
         // sku contains less than 3 characters or  more than 15 characters
-        if (checkLength(sku, 3, 15))
+        if (!checkLength(sku, 3, 15))
             return handleProducterrors(res, 'sku must be between 3 to 15 characters', 'sku', files);
         /******** sku validation ends ********/
 
@@ -58,14 +58,14 @@ exports.create = function(req, res) {
             return handleProducterrors(res, 'name is required', 'name', files);
 
         // name contains less than 3 characters or  more than 60 characters
-        if (checkLength(name, 3, 60))
+        if (!checkLength(name, 3, 60))
             return handleProducterrors(res, 'name must be between 3 to 60 characters', 'name', files);
         /************* name validation ends *************/
 
 
         /************* ribbon validation *************/
         // ribbon contains less than 3 characters or  more than 60 characters
-        if (checkLength(ribbon, 3, 20))
+        if (!checkLength(ribbon, 3, 20))
             return handleProducterrors(res, 'ribbon must be between 3 to 20 characters', 'ribbon', files);
         /************* ribbon validation ends *************/
 
@@ -76,24 +76,89 @@ exports.create = function(req, res) {
             return handleProducterrors(res, 'categoryId is required', 'categoryId', files);
         /************* categoryId validation ends *************/
 
+
+        /************* name validation *************/
+        // costPrice doesn't exist or isEmpty
+        if (checkRequired(costPrice))
+            return handleProducterrors(res, 'costPrice is required', 'costPrice', files);
+
+        // costPrice must be greater than 0 and less than 99999
+        if (!checkValue(costPrice, 0.01, 99999.99))
+            return handleProducterrors(res, 'costPrice must be greater than 0.01 and less than 99999.99', 'costPrice', files);
+        /************* costPrice validation ends *************/
+
         return res.json({ msg: "success" });
     });
 
 }
 
+/**
+ * checkRequired function
+ * This function check if the field is not null or empty
+ * @param {*} field 
+ * @returns true - if empty/null, false - not empty/null 
+ */
 function checkRequired(field) {
     return !field || field.length == 0;
 }
 
+
+/**
+ * checkLength function
+ * This function check if the field(String) has length greater
+ * than min and less than max
+ * @param {*} field
+ * @param {*} min
+ * @param {*} max
+ * @returns true - if field is between min and max,
+ *          false - if field is not in between min and max 
+ */
 function checkLength(field, min, max) {
 
     if (!field)
         return false;
     // trimming the extra space before and after the field
     field = field.trim();
-    return field.length < min || field.length > max;
+    return field.length >= min && field.length <= max;
 }
 
+
+/**
+ * checkValue function
+ * This function check if the field(Numeric) is greater than
+ * min and less than max 
+ * @param {*} field 
+ * @param {*} min 
+ * @param {*} max 
+ * @returns true - if field is between min and max,
+ *          false - if field is not in between min and max
+ */
+function checkValue(field, min, max) {
+
+    if (!field)
+        return true;
+
+    try {
+        field = Number(field);
+        if (isNaN(field))
+            return false;
+        return field >= min && field <= max;
+
+    } catch (err) {
+        return false;
+    }
+}
+
+
+/**
+ * handleProducterrors function
+ * This function will delete the images and send response
+ * appropriately
+ * @param {*} res 
+ * @param {*} msg 
+ * @param {*} param 
+ * @param {*} files 
+ */
 function handleProducterrors(res, msg, param, files) {
 
     deleteTempImages(files);
@@ -106,8 +171,16 @@ function handleProducterrors(res, msg, param, files) {
     });
 }
 
+
+/**
+ * deleteTempImages function
+ * This function will delete the images from the 
+ * temporary location
+ * @param {*} files 
+ */
 function deleteTempImages(files) {
-    // files are uploaded which needs to be deleted because of error
+
+    // check if the image is present or not
     if (files.images && files.images != '') {
 
         // loop to go through every image
