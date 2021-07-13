@@ -1,10 +1,15 @@
 const formidable = require('formidable');
 const path = require('path');
 const fs = require('fs');
+const fsPromises = fs.promises;
+const _ = require('lodash');
 
 
 const Product = require('../models/product');
+const { Console } = require('console');
 // const { errorHandler } = require('../helpers/dbErrorHandler');
+
+const folderPath = path.join(__dirname, '../public/products/temp')
 
 exports.create = function(req, res) {
 
@@ -15,7 +20,7 @@ exports.create = function(req, res) {
     //accept multiple files
     form.multiples = true;
     // directory to upload files
-    form.uploadDir = path.join(__dirname, '../public/products');
+    form.uploadDir = folderPath;
 
 
     // parsing the form data
@@ -24,14 +29,7 @@ exports.create = function(req, res) {
         // if there is any error occurs in parsing form
         if (err) {
 
-            deleteTempImages(files);
-
-            return res.status(400).json({
-                "errors": [{
-                    "msg": "Image could not be uploaded",
-                    "param": "images"
-                }]
-            });
+            return handleProducterrors(res, 'Image could not be uploaded', 'images', files);
         }
 
 
@@ -39,7 +37,6 @@ exports.create = function(req, res) {
 
 
         let { sku, name, ribbon, categoryId, costPrice, margin, stickerPrice, onSale, discount, description, additionalInfo, productOptions } = fields;
-
 
 
         /******** sku validation ********/
@@ -51,6 +48,71 @@ exports.create = function(req, res) {
         if (!checkLength(sku, 3, 15))
             return handleProducterrors(res, 'sku must be between 3 to 15 characters', 'sku', files);
         /******** sku validation ends ********/
+
+
+
+
+
+
+        /************* images validation *************/
+        // Folder to save all the images of the product 
+        const folderName = _.kebabCase(sku);
+        createDir(path.join(__dirname, '../public/products/') + folderName);
+
+        // An array to store multiple images
+        let imageList = [];
+
+        //if images doesn't exist
+        if (!(files.images && files.images != ''))
+            handleProducterrors(res, 'images is required', 'images', files);
+
+
+
+        for (let image of files.images) {
+            // temporary location of the image
+            let oldPath = image.path;
+            // index of the dot before the image extension
+            let indexOfDot = image.name.indexOf('.');
+            // Name of the image
+            let name = _.kebabCase(image.name.substring(0, indexOfDot));
+            // extension of the image
+            let extension = image.name.substring(indexOfDot);
+
+
+            if (!(extension.toLowerCase() === '.jpg' || extension.toLowerCase() === '.jpeg' || extension.toLowerCase() === '.bmp' || extension.toLowerCase() === '.png' || extension.toLowerCase() === '.gif' || extension.toLowerCase() === '.tiff' || extension.toLowerCase() === '.svg' || extension.toLowerCase() === '.webp')) {
+                return handleProducterrors(res, 'Invalid image format', 'images', files);
+            }
+            // New location of the image
+            let newPath = path.join(folderPath, '../', folderName, name + extension);
+
+            imageList.push({
+                oldPath,
+                name,
+                extension,
+                folderName,
+                newPath,
+            });
+        }
+
+        try {
+            moveImages(imageList);
+        } catch (err) {
+            return handleProducterrors(res, 'Error Uploading image', 'images', files, folderName);
+        }
+
+
+        let images = [];
+
+        for (let img of imageList) {
+            images.push({
+                name: img.name,
+                extension: img.extension,
+                location: img.folderName
+            });
+        }
+
+        console.log(images);
+        /************* images validation ends *************/
 
 
 
@@ -212,7 +274,7 @@ exports.create = function(req, res) {
 
                 // loop to go through each productOptions
                 for (let option of productOptions) {
-                    console.log(option);
+
                     // option.optionTitle doesn't exist or isEmpty
                     if (checkRequired(option.optionTitle))
                         return handleProducterrors(res, 'optionTitle is required', 'optionTitle', files);
@@ -234,9 +296,65 @@ exports.create = function(req, res) {
                         if (!checkLength(varient.name, 3, 32))
                             return handleProducterrors(res, 'varient name must be between 3 to 32 characters', 'varient name', files);
 
+                        // varient.stock doesn't exist or isEmpty
+                        if (checkRequired(varient.stock))
+                            return handleProducterrors(res, 'varient stock is required', 'varient stock', files);
+
+                        for (let stock of varient.stock) {
+
+                            // stock.costPrice doesn't exist or isEmpty
+                            if (checkRequired(stock.costPrice))
+                                return handleProducterrors(res, 'stock costPrice is required', 'stock costPrice', files);
+                            // stock.costPrice must be greater than 0 and less than 99999
+                            if (!checkValue(stock.costPrice, 0.01, 99999))
+                                return handleProducterrors(res, 'stock costPrice must be greater than 0.01 and less than 99999', 'stock costPrice', files);
+
+                            // stock.margin doesn't exist or isEmpty
+                            if (checkRequired(stock.margin))
+                                return handleProducterrors(res, 'stock margin is required', 'stock margin', files);
+                            // stock.margin must be greater than 0 and less than 99999
+                            if (!checkValue(stock.margin, 0.01, 99999))
+                                return handleProducterrors(res, 'stock margin must be greater than 0.01 and less than 99999', 'stock margin', files);
+
+                            // stock.stickerPrice doesn't exist or isEmpty
+                            if (checkRequired(stock.stickerPrice))
+                                return handleProducterrors(res, 'stock stickerPrice is required', 'stock stickerPrice', files);
+                            // stock.margin must be greater than 0 and less than 99999
+                            if (!checkValue(stock.stickerPrice, 0.01, 99999))
+                                return handleProducterrors(res, 'stock stickerPrice must be greater than 0.01 and less than 99999', 'stock stickerPrice', files);
+
+                            // stock.quantity doesn't exist or isEmpty
+                            if (checkRequired(stock.quantity))
+                                return handleProducterrors(res, 'stock quantity is required', 'stock quantity', files);
+                            // stock.quantity must be greater than 0 and less than 99999
+                            if (!checkValue(stock.quantity, 0.01, 99999))
+                                return handleProducterrors(res, 'stock quantity must be greater than 0 and less than 99999', 'stock quantity', files);
+
+                            // stock.weight doesn't exist or isEmpty
+                            if (checkRequired(stock.weight))
+                                return handleProducterrors(res, 'stock weight is required', 'stock weight', files);
+
+                            // stock.weight.value doesn't exist or isEmpty
+                            if (checkRequired(stock.weight.value))
+                                return handleProducterrors(res, 'stock weight value is required', 'stock weight value', files);
+                            // stock.weight.value must be greater than 0 and less than 99999
+                            if (!checkValue(stock.weight.value, 0.01, 99999))
+                                return handleProducterrors(res, 'stock weight value must be greater than 0 and less than 99999', 'stock weight value', files);
+
+                            // stock.weight.unit doesn't exist or isEmpty
+                            if (checkRequired(stock.weight.unit))
+                                return handleProducterrors(res, 'stock weight unit is required', 'stock weight unit', files);
+                            // stock.weight.unit must be 2 characters
+                            if (!checkLength(stock.weight.unit, 2, 2))
+                                return handleProducterrors(res, 'stock weight unit must be 2 characters(kg/lb)', 'stock weight unit', files);
+                            // stock.weight.unit must be either kg or lb
+                            if (!(stock.weight.unit === 'lb' || stock.weight.unit === 'kg'))
+                                return handleProducterrors(res, 'stock weight unit must be kg or lb', 'stock weight unit', files);
+
+                        }
+
 
                     }
-
                 }
             } catch (err) {
                 return handleProducterrors(res, 'productOptions format is invalid', 'productOptions', files);
@@ -245,10 +363,36 @@ exports.create = function(req, res) {
         /************* productOptions validation ends *************/
 
 
+
+
+
+
+
+
+
         return res.json({ msg: "success" });
+
+
+
     });
 }
 
+
+function moveImages(images) {
+
+    for (let image of images) {
+        if (fs.existsSync(image.oldPath)) {
+            fs.rename(image.oldPath, image.newPath, function(err) {
+                if (err)
+                    throw "Image rename Unsuccessful"
+                        // else
+                        //     console.log('rename successful');
+            });
+        } else {
+            throw "Image doesn\'t exist";
+        }
+    }
+}
 
 
 /**
@@ -321,9 +465,12 @@ function checkValue(field, min, max) {
  * @param {*} param 
  * @param {*} files 
  */
-function handleProducterrors(res, msg, param, files) {
+function handleProducterrors(res, msg, param, files, folder) {
+
 
     deleteTempImages(files);
+    if (folder)
+        removeDir(folder);
 
     res.status(400).json({
         "errors": [{
@@ -341,22 +488,55 @@ function handleProducterrors(res, msg, param, files) {
  * temporary location
  * @param {*} files 
  */
-function deleteTempImages(files) {
+async function deleteTempImages(files) {
 
     // check if the image is present or not
     if (files.images && files.images != '') {
 
         // loop to go through every image
-        for (image of files.images) {
+        for (let image of files.images) {
 
             // try to remove the image from temporary location 
             try {
                 //removing the file
-                fs.unlinkSync(image.path);
+                await fs.unlinkSync(image.path);
 
             } catch (err) {
                 console.log(err);
             }
         }
+    }
+}
+
+// This method will create the directory
+// @param: String with the folder name starting from root
+function createDir(directoryPath) {
+    // Create the folder if not created yet
+    try {
+        if (!fs.existsSync(directoryPath)) {
+            fs.mkdirSync(directoryPath);
+        }
+    } catch (err) {
+        console.error(err);
+    }
+}
+
+// This method will remove the directory
+// @param: String with the folder name starting from root
+function removeDir(directoryPath) {
+
+    directoryPath = path.join(folderPath, '../', directoryPath);
+    if (fs.existsSync(directoryPath)) {
+        fs.readdirSync(directoryPath).forEach((file, index) => {
+            const curPath = path.join(directoryPath, file);
+            if (fs.lstatSync(curPath).isDirectory()) {
+                // recurse
+                deleteFolderRecursive(curPath);
+            } else {
+                // delete file
+                fs.unlinkSync(curPath);
+            }
+        });
+        fs.rmdirSync(directoryPath);
     }
 }

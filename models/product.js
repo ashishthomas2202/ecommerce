@@ -43,6 +43,9 @@ const productSchema = new mongoose.Schema({
             maxlength: 50
         }
     }],
+    onePrice: {
+        type: Boolean,
+    },
     costPrice: {
         type: Number,
         trim: true,
@@ -110,30 +113,47 @@ const productSchema = new mongoose.Schema({
                 trim: true,
                 maxlength: 32
             },
-            stock: {
-                type: Number,
-                trim: true,
-                min: 0,
-                max: 999999
-            },
-            weight: {
-                value: {
+            stock: [{
+                costPrice: {
+                    type: Number,
+                    trim: true,
+                    min: 0.01,
+                    max: 99999
+                },
+                margin: {
+                    type: Number,
+                    trim: true,
+                    min: 0.01,
+                    max: 99999
+                },
+                stickerPrice: {
+                    type: Number,
+                    trim: true,
+                    min: 0.01,
+                    max: 99999
+                },
+                quantity: {
                     type: Number,
                     trim: true,
                     min: 0,
-                    max: 100000
+                    max: 999999
                 },
-                unit: {
-                    type: String,
-                    trim: true,
-                    maxlength: 10
+                weight: {
+                    value: {
+                        type: Number,
+                        trim: true,
+                        min: 0,
+                        max: 999999
+                    },
+                    unit: {
+                        type: String,
+                        trim: true,
+                        maxlength: 10
+                    }
                 }
-            }
+            }]
         }]
-
     }],
-
-
 }, { timestamps: true });
 
 module.exports = mongoose.model('Product', productSchema);
