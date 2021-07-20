@@ -54,14 +54,14 @@ const productSchema = new mongoose.Schema({
         min: 0.01,
         max: 99999
     },
-    margin: {
+    stickerPrice: {
         type: Number,
         trim: true,
         required: true,
         min: 0.01,
         max: 99999
     },
-    stickerPrice: {
+    margin: {
         type: Number,
         trim: true,
         required: true,
@@ -121,13 +121,13 @@ const productSchema = new mongoose.Schema({
                     min: 0.01,
                     max: 99999
                 },
-                margin: {
+                stickerPrice: {
                     type: Number,
                     trim: true,
                     min: 0.01,
                     max: 99999
                 },
-                stickerPrice: {
+                margin: {
                     type: Number,
                     trim: true,
                     min: 0.01,

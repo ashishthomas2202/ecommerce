@@ -140,7 +140,32 @@ exports.create = function(req, res) {
                     param: 'costPrice',
                     files: files,
                 });
+            //Assigning the costPrice to the product object
+            product.costPrice = costPrice;
             /************* costPrice validation ends *************/
+
+
+
+            /************* stickerPrice validation *************/
+            // stickerPrice doesn't exist or isEmpty
+            if (checkRequired(stickerPrice))
+                throw JSON.stringify({
+                    message: 'stickerPrice is required',
+                    param: 'stickerPrice',
+                    files: files,
+                });
+            // stickerPrice must be greater than costPrice and less than 99999
+            if (!checkValue(stickerPrice, Number(costPrice) + 0.01, 99999))
+                throw JSON.stringify({
+                    message: 'stickerPrice must be greater than ' + costPrice + ' and less than 99999',
+                    param: 'stickerPrice',
+                    files: files,
+                });
+            //Assigning the stickerPrice to the product object
+            product.stickerPrice = stickerPrice;
+            /************* stickerPrice validation ends *************/
+
+
 
 
             /************* images validation *************/
