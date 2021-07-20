@@ -32,11 +32,13 @@ exports.create = function(req, res) {
                 });
             }
 
+            let jsonData = JSON.parse(fields.jsonData);
+            console.log(jsonData);
 
             //***************** Parsing Fields *************************
 
             let product = new Product();
-            let { sku, name, ribbon, categoryId, onePrice, costPrice, margin, stickerPrice, onSale, discount, description, additionalInfo, productOptions } = fields;
+            let { sku, name, ribbon, categoryId, onePrice, costPrice, margin, stickerPrice, onSale, discount, description, additionalInfo, productOptions } = jsonData;
 
 
             /******** sku validation ********/
@@ -120,14 +122,14 @@ exports.create = function(req, res) {
                     files: files,
                 });
             // check if onePrice is either true or false
-            if (!(onePrice.toLowerCase() == 'true' || onePrice.toLowerCase() == 'false'))
+            if (!(onePrice == true || onePrice == false))
                 throw JSON.stringify({
                     message: 'onePrice must be either true or false',
                     param: 'onePrice',
                     files: files,
                 });
             //Assigning the onePrice to the product object
-            product.onePrice = onePrice.toLowerCase();
+            product.onePrice = onePrice;
             /************* onePrice validation ends *************/
 
 
@@ -204,16 +206,29 @@ exports.create = function(req, res) {
                     files: files,
                 });
             // check if onSale is either true or false
-            if (!(onSale.toLowerCase() == 'true' || onSale.toLowerCase() == 'false'))
+            if (!(onSale == true || onSale == false))
                 throw JSON.stringify({
                     message: 'onSale must be either true or false',
                     param: 'onSale',
                     files: files,
                 });
             //Assigning the onSale to the product object
-            product.onSale = onSale.toLowerCase();
+            product.onSale = onSale;
             /************* onSale validation ends *************/
 
+
+
+
+            /************* discount validation *************/
+            // discount doesn't exist or isEmpty
+            if (checkRequired(discount))
+                throw JSON.stringify({
+                    message: 'discount is required',
+                    param: 'discount',
+                    files: files,
+                });
+
+            /************* discount validation ends *************/
 
 
 
