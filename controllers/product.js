@@ -4,6 +4,8 @@ const path = require('path');
 const _ = require('lodash');
 const fs = require('fs');
 
+const { check } = require('../validators/product');
+
 const tempFolderPath = path.join(__dirname, '../public/products/temp');
 
 exports.create = function(req, res) {
@@ -42,20 +44,7 @@ exports.create = function(req, res) {
 
 
             /******** sku validation ********/
-            // sku doesn't exist or isEmpty
-            if (checkRequired(sku))
-                throw JSON.stringify({
-                    message: 'sku is required',
-                    param: 'sku',
-                    files: files,
-                });
-            // sku contains less than 3 characters or  more than 15 characters
-            if (!checkLength(sku, 3, 15))
-                throw JSON.stringify({
-                    message: 'sku must be between 3 to 15 characters',
-                    param: 'sku',
-                    files: files
-                });
+            check('sku', { sku, files });
             //Assigning the sku value to the product object
             product.sku = sku;
             /******** sku validation ends ********/
@@ -63,20 +52,7 @@ exports.create = function(req, res) {
 
 
             /************* name validation *************/
-            // name doesn't exist or isEmpty
-            if (checkRequired(name))
-                throw JSON.stringify({
-                    message: 'name is required',
-                    param: 'name',
-                    files: files,
-                });
-            // name contains less than 3 characters or  more than 60 characters
-            if (!checkLength(name, 3, 60))
-                throw JSON.stringify({
-                    message: 'name must be between 3 to 60 characters',
-                    param: 'name',
-                    files: files,
-                });
+            check('name', { name, files });
             //Assigning the name to the product object
             product.name = name;
             /************* name validation ends *************/
@@ -84,14 +60,8 @@ exports.create = function(req, res) {
 
 
             /************* ribbon validation *************/
-            // ribbon contains less than 3 characters or  more than 60 characters
             if (ribbon) {
-                if (!checkLength(ribbon, 3, 20))
-                    throw JSON.stringify({
-                        message: 'ribbon must be between 3 to 20 characters',
-                        param: 'ribbon',
-                        files: files,
-                    });
+                check('ribbon', { ribbon, files });
                 //Assigning the ribbon to the product object
                 product.ribbon = ribbon;
             }
@@ -100,13 +70,7 @@ exports.create = function(req, res) {
 
 
             /************* categoryId validation *************/
-            // categoryId doesn't exist or isEmpty
-            if (checkRequired(categoryId))
-                throw JSON.stringify({
-                    message: 'categoryId is required',
-                    param: 'categoryId',
-                    files: files,
-                });
+            check('categoryId', { categoryId, files });
             //Assigning the categoryId to the product object
             product.categoryId = categoryId;
             /************* categoryId validation ends *************/
@@ -114,20 +78,7 @@ exports.create = function(req, res) {
 
 
             /************* onePrice validation *************/
-            // onePrice doesn't exist or isEmpty
-            if (checkRequired(onePrice))
-                throw JSON.stringify({
-                    message: 'onePrice is required',
-                    param: 'onePrice',
-                    files: files,
-                });
-            // check if onePrice is either true or false
-            if (!(onePrice == true || onePrice == false))
-                throw JSON.stringify({
-                    message: 'onePrice must be either true or false',
-                    param: 'onePrice',
-                    files: files,
-                });
+            check('onePrice', { onePrice, files });
             //Assigning the onePrice to the product object
             product.onePrice = onePrice;
             /************* onePrice validation ends *************/
@@ -135,83 +86,37 @@ exports.create = function(req, res) {
 
 
             /************* costPrice validation *************/
-            // costPrice doesn't exist or isEmpty
-            if (checkRequired(costPrice))
-                throw JSON.stringify({
-                    message: 'costPrice is required',
-                    param: 'costPrice',
-                    files: files,
-                });
-            // costPrice must be greater than 0 and less than 99999
-            if (!checkValue(costPrice, 0.01, 99999))
-                throw JSON.stringify({
-                    message: 'costPrice must be greater than 0.01 and less than 99999',
-                    param: 'costPrice',
-                    files: files,
-                });
-            //Assigning the costPrice to the product object
-            product.costPrice = costPrice;
+            if (onePrice) {
+                check('costPrice', { costPrice, files });
+                //Assigning the costPrice to the product object
+                product.costPrice = costPrice;
+            }
             /************* costPrice validation ends *************/
 
 
 
             /************* stickerPrice validation *************/
-            // stickerPrice doesn't exist or isEmpty
-            if (checkRequired(stickerPrice))
-                throw JSON.stringify({
-                    message: 'stickerPrice is required',
-                    param: 'stickerPrice',
-                    files: files,
-                });
-            // stickerPrice must be greater than costPrice and less than 99999
-            if (!checkValue(stickerPrice, Number(costPrice) + 0.01, 99999))
-                throw JSON.stringify({
-                    message: 'stickerPrice must be greater than ' + costPrice + ' and less than 99999',
-                    param: 'stickerPrice',
-                    files: files,
-                });
-            //Assigning the stickerPrice to the product object
-            product.stickerPrice = stickerPrice;
+            if (onePrice) {
+                check('stickerPrice', { stickerPrice, costPrice, files });
+                //Assigning the stickerPrice to the product object
+                product.stickerPrice = stickerPrice;
+            }
             /************* stickerPrice validation ends *************/
 
 
 
             /************* margin validation *************/
-            // margin doesn't exist or isEmpty
-            if (checkRequired(margin))
-                throw JSON.stringify({
-                    message: 'margin is required',
-                    param: 'margin',
-                    files: files,
-                });
-            // margin must be greater than 0 and less than stickerPrice - cost price
-            if (!checkValue(margin, 0.01, Number(stickerPrice) - Number(costPrice)))
-                throw JSON.stringify({
-                    message: 'margin must be greater than 0 and less than ' + (Number(stickerPrice) - Number(costPrice)),
-                    param: 'margin',
-                    files: files,
-                });
-            //Assigning the margin to the product object
-            product.margin = margin;
+            if (onePrice) {
+                check('margin', { margin, costPrice, stickerPrice, files });
+                //Assigning the margin to the product object
+                product.margin = margin;
+            }
             /************* margin validation ends *************/
 
 
 
             /************* onSale validation *************/
-            // onSale doesn't exist or isEmpty
-            if (checkRequired(onSale))
-                throw JSON.stringify({
-                    message: 'onSale is required',
-                    param: 'onSale',
-                    files: files,
-                });
-            // check if onSale is either true or false
-            if (!(onSale == true || onSale == false))
-                throw JSON.stringify({
-                    message: 'onSale must be either true or false',
-                    param: 'onSale',
-                    files: files,
-                });
+            check('onSale', { onSale, files });
             //Assigning the onSale to the product object
             product.onSale = onSale;
             /************* onSale validation ends *************/
@@ -220,52 +125,7 @@ exports.create = function(req, res) {
 
             /************* discount validation *************/
             if (onSale) {
-                // discount doesn't exist or isEmpty
-                if (checkRequired(discount))
-                    throw JSON.stringify({
-                        message: 'discount is required',
-                        param: 'discount',
-                        files: files,
-                    });
-                // discount amount doesn't exist or isEmpty
-                if (checkRequired(discount.amount))
-                    throw JSON.stringify({
-                        message: 'discount amount is required',
-                        param: 'discount amount',
-                        files: files,
-                    });
-                // discount symbol doesn't exist or isEmpty
-                if (checkRequired(discount.symbol))
-                    throw JSON.stringify({
-                        message: 'discount symbol is required',
-                        param: 'discount symbol',
-                        files: files,
-                    });
-                // discount symbol must be either '%' or '$'
-                if (!(discount.symbol == '%' || discount == '$'))
-                    throw JSON.stringify({
-                        message: 'discount symbol must be either % or $',
-                        param: 'discount symbol',
-                        files: files,
-                    });
-                // checking the discount amount for percentage
-                if (discount.symbol == '%') {
-                    if (!checkValue(discount.amount, 0.01, 100))
-                        throw JSON.stringify({
-                            message: 'discount amount must be greater than 0 and less than 100 %',
-                            param: 'discount amount',
-                            files: files,
-                        });
-                }
-                // checking the discount amount for dollar
-                if (discount.symbol == '$') {
-                    if (!checkValue(discount.amount, 0.01, 99999))
-                        throw JSON.stringify({
-                            message: 'discount amount must be greater than 0 and less than 99999 $',
-                            param: 'discount amount',
-                            files: files,
-                        });
-                }
+                check('discount', { discount, files });
                 //Assigning the discount to the product object
                 product.discount = discount;
             }
@@ -274,21 +134,32 @@ exports.create = function(req, res) {
 
 
             /************* description validation *************/
-            // description doesn't exist or isEmpty
-            if (checkRequired(description))
-                throw JSON.stringify({
-                    message: 'description is required',
-                    param: 'description',
-                    files: files,
-                });
-            // description contains less than 3 characters or  more than 400 characters
-            if (!checkLength(description, 3, 400))
-                throw JSON.stringify({
-                    message: 'description must be between 3 to 400 characters',
-                    param: 'description',
-                    files: files,
-                });
+            check('description', { description, files });
+            //Assigning the description to the product object
+            product.description = description;
             /************* description validation ends *************/
+
+
+
+            /************* additionalInfo validation *************/
+            if (additionalInfo) {
+                check('additionalInfo', { additionalInfo, files });
+                //Assigning the additionalInfo to the product object
+                product.additionalInfo = additionalInfo;
+            }
+            /************* additionalInfo validation ends *************/
+
+
+
+            /************* productOptions validation *************/
+            if (productOptions) {
+                check('productOptions', { productOptions, onePrice, costPrice, stickerPrice, margin, files });
+                //Assigning the productOptions to the product object
+                product.productOptions = productOptions;
+            }
+            /************* productOptions validation ends *************/
+
+
 
             /************* images validation *************/
             // Folder to save all the images of the product 
@@ -495,59 +366,5 @@ function deleteDir(path) {
         fs.rmdirSync(path);
     } catch (err) {
         console.log(err);
-    }
-}
-/**
- * checkRequired function
- * This function check if the field is not null or empty
- * @param {*} field 
- * @returns true - if empty/null, false - not empty/null 
- */
-function checkRequired(field) {
-    return !field || field.length == 0;
-}
-
-/**
- * checkLength function
- * This function check if the field(String) has length greater
- * than min and less than max
- * @param {*} field
- * @param {*} min
- * @param {*} max
- * @returns true - if field is between min and max,
- *          false - if field is not in between min and max 
- */
-function checkLength(field, min, max) {
-
-    if (!field)
-        return false;
-    // trimming the extra space before and after the field
-    field = field.trim();
-    return field.length >= min && field.length <= max;
-}
-
-/**
- * checkValue function
- * This function check if the field(Numeric) is greater than
- * min and less than max 
- * @param {*} field 
- * @param {*} min 
- * @param {*} max 
- * @returns true - if field is between min and max,
- *          false - if field is not in between min and max
- */
-function checkValue(field, min, max) {
-
-    if (!field)
-        return true;
-
-    try {
-        field = Number(field);
-        if (isNaN(field))
-            return false;
-        return field >= min && field <= max;
-
-    } catch (err) {
-        return false;
     }
 }
