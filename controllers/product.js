@@ -97,6 +97,20 @@ exports.create = function(req, res) {
 
 
 
+            /************* categoryId validation *************/
+            // categoryId doesn't exist or isEmpty
+            if (checkRequired(categoryId))
+                throw JSON.stringify({
+                    message: 'categoryId is required',
+                    param: 'categoryId',
+                    files: files,
+                });
+            //Assigning the categoryId to the product object
+            product.categoryId = categoryId;
+            /************* categoryId validation ends *************/
+
+
+
 
             /************* images validation *************/
             // Folder to save all the images of the product 
