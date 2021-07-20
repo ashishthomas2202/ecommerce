@@ -41,6 +41,11 @@ const productSchema = new mongoose.Schema({
             type: String,
             trim: true,
             maxlength: 50
+        },
+        path: {
+            type: String,
+            trim: true,
+            maxlength: 100
         }
     }],
     onePrice: {
