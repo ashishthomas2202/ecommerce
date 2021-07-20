@@ -218,19 +218,77 @@ exports.create = function(req, res) {
 
 
 
-
             /************* discount validation *************/
-            // discount doesn't exist or isEmpty
-            if (checkRequired(discount))
-                throw JSON.stringify({
-                    message: 'discount is required',
-                    param: 'discount',
-                    files: files,
-                });
-
+            if (onSale) {
+                // discount doesn't exist or isEmpty
+                if (checkRequired(discount))
+                    throw JSON.stringify({
+                        message: 'discount is required',
+                        param: 'discount',
+                        files: files,
+                    });
+                // discount amount doesn't exist or isEmpty
+                if (checkRequired(discount.amount))
+                    throw JSON.stringify({
+                        message: 'discount amount is required',
+                        param: 'discount amount',
+                        files: files,
+                    });
+                // discount symbol doesn't exist or isEmpty
+                if (checkRequired(discount.symbol))
+                    throw JSON.stringify({
+                        message: 'discount symbol is required',
+                        param: 'discount symbol',
+                        files: files,
+                    });
+                // discount symbol must be either '%' or '$'
+                if (!(discount.symbol == '%' || discount == '$'))
+                    throw JSON.stringify({
+                        message: 'discount symbol must be either % or $',
+                        param: 'discount symbol',
+                        files: files,
+                    });
+                // checking the discount amount for percentage
+                if (discount.symbol == '%') {
+                    if (!checkValue(discount.amount, 0.01, 100))
+                        throw JSON.stringify({
+                            message: 'discount amount must be greater than 0 and less than 100 %',
+                            param: 'discount amount',
+                            files: files,
+                        });
+                }
+                // checking the discount amount for dollar
+                if (discount.symbol == '$') {
+                    if (!checkValue(discount.amount, 0.01, 99999))
+                        throw JSON.stringify({
+                            message: 'discount amount must be greater than 0 and less than 99999 $',
+                            param: 'discount amount',
+                            files: files,
+                        });
+                }
+                //Assigning the discount to the product object
+                product.discount = discount;
+            }
             /************* discount validation ends *************/
 
 
+
+            /************* description validation *************/
+            // description doesn't exist or isEmpty
+            if (checkRequired(description))
+                throw JSON.stringify({
+                    message: 'description is required',
+                    param: 'description',
+                    files: files,
+                });
+            // description contains less than 3 characters or  more than 400 characters
+            if (!checkLength(description, 3, 400))
+                throw JSON.stringify({
+                    message: 'description must be between 3 to 400 characters',
+                    param: 'description',
+                    files: files,
+                });
+            /************* description validation ends *************/
 
             /************* images validation *************/
             // Folder to save all the images of the product 
