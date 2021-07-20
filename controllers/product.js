@@ -36,7 +36,7 @@ exports.create = function(req, res) {
             //***************** Parsing Fields *************************
 
             let product = new Product();
-            let { sku, name, ribbon, categoryId, costPrice, margin, stickerPrice, onSale, discount, description, additionalInfo, productOptions } = fields;
+            let { sku, name, ribbon, categoryId, onePrice, costPrice, margin, stickerPrice, onSale, discount, description, additionalInfo, productOptions } = fields;
 
 
             /******** sku validation ********/
@@ -111,6 +111,19 @@ exports.create = function(req, res) {
 
 
 
+            /************* onePrice validation *************/
+            // onePrice doesn't exist or isEmpty
+            if (checkRequired(onePrice))
+                throw JSON.stringify({
+                    message: 'onePrice is required',
+                    param: 'onePrice',
+                    files: files,
+                });
+            //Assigning the onePrice to the product object
+            product.onePrice = onePrice;
+            /************* onePrice validation ends *************/
+
+
 
             /************* images validation *************/
             // Folder to save all the images of the product 
@@ -119,7 +132,6 @@ exports.create = function(req, res) {
 
             // array to store images info
             let images = [];
-            let imageList = [];
 
             // checking if the image is present in the form
             if (files.images && files.images != '') {

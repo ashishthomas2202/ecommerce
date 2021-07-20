@@ -21,11 +21,11 @@ const productSchema = new mongoose.Schema({
         trim: true,
         maxlength: 20
     },
-    categoryId: {
+    categoryId: [{
         type: ObjectId,
         ref: 'Category',
         required: true
-    },
+    }],
     images: [{
         name: {
             type: String,
@@ -37,11 +37,6 @@ const productSchema = new mongoose.Schema({
             trim: true,
             maxlength: 10
         },
-        location: {
-            type: String,
-            trim: true,
-            maxlength: 50
-        },
         path: {
             type: String,
             trim: true,
@@ -50,6 +45,7 @@ const productSchema = new mongoose.Schema({
     }],
     onePrice: {
         type: Boolean,
+        required: true
     },
     costPrice: {
         type: Number,
