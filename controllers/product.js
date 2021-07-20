@@ -167,6 +167,27 @@ exports.create = function(req, res) {
 
 
 
+            /************* margin validation *************/
+            // margin doesn't exist or isEmpty
+            if (checkRequired(margin))
+                throw JSON.stringify({
+                    message: 'margin is required',
+                    param: 'margin',
+                    files: files,
+                });
+            // margin must be greater than 0 and less than stickerPrice - cost price
+            if (!checkValue(margin, 0.01, Number(stickerPrice) - Number(costPrice)))
+                throw JSON.stringify({
+                    message: 'margin must be greater than 0 and less than ' + (Number(stickerPrice) - Number(costPrice)),
+                    param: 'margin',
+                    files: files,
+                });
+            //Assigning the margin to the product object
+            product.margin = margin;
+            /************* margin validation ends *************/
+
+
+
 
             /************* images validation *************/
             // Folder to save all the images of the product 
