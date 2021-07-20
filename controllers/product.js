@@ -125,6 +125,24 @@ exports.create = function(req, res) {
 
 
 
+            /************* costPrice validation *************/
+            // costPrice doesn't exist or isEmpty
+            if (checkRequired(costPrice))
+                throw JSON.stringify({
+                    message: 'costPrice is required',
+                    param: 'costPrice',
+                    files: files,
+                });
+            // costPrice must be greater than 0 and less than 99999
+            if (!checkValue(costPrice, 0.01, 99999))
+                throw JSON.stringify({
+                    message: 'costPrice must be greater than 0.01 and less than 99999',
+                    param: 'costPrice',
+                    files: files,
+                });
+            /************* costPrice validation ends *************/
+
+
             /************* images validation *************/
             // Folder to save all the images of the product 
             const folderName = _.kebabCase(sku);
@@ -359,4 +377,30 @@ function checkLength(field, min, max) {
     // trimming the extra space before and after the field
     field = field.trim();
     return field.length >= min && field.length <= max;
+}
+
+/**
+ * checkValue function
+ * This function check if the field(Numeric) is greater than
+ * min and less than max 
+ * @param {*} field 
+ * @param {*} min 
+ * @param {*} max 
+ * @returns true - if field is between min and max,
+ *          false - if field is not in between min and max
+ */
+function checkValue(field, min, max) {
+
+    if (!field)
+        return true;
+
+    try {
+        field = Number(field);
+        if (isNaN(field))
+            return false;
+        return field >= min && field <= max;
+
+    } catch (err) {
+        return false;
+    }
 }
