@@ -1,10 +1,11 @@
-const Product = require('../models/product');
 const formidable = require('formidable');
 const path = require('path');
 const _ = require('lodash');
 const fs = require('fs');
 
+const Product = require('../models/product');
 const { check } = require('../validators/product');
+const { errorHandler } = require('../helpers/dbErrorHandler');
 
 const tempFolderPath = path.join(__dirname, '../public/products/temp');
 
@@ -173,7 +174,6 @@ exports.create = function(req, res) {
             if (files.images && files.images != '') {
                 try {
                     let imageList = [];
-
                     //Creating the directory to store the images
                     fs.mkdirSync(productDir);
 
@@ -199,7 +199,6 @@ exports.create = function(req, res) {
                                 files: files
                             });
                         }
-
                         // adding images info in an array
                         imageList.push({
                             oldPath,
@@ -209,7 +208,6 @@ exports.create = function(req, res) {
                             newPath,
                         });
                     }
-
                     // loop to go through each image one by one
                     for (let image of imageList) {
                         //moving image from temp folder to the product folder
@@ -219,7 +217,6 @@ exports.create = function(req, res) {
                             extension: image.extension,
                             path: image.newPath
                         });
-
                     }
                 } catch (err) {
                     if (err.code === 'EEXIST')
@@ -240,14 +237,24 @@ exports.create = function(req, res) {
                     }
                 }
             }
+            //Assigning the images to the product object
+            product.images = images;
 
-            return res.json({ msg: 'successful' });
+            product.save((err, data) => {
+                if (err) {
+                    removeErrorFiles(files.images, productDir);
+                    return res.status(400).json({
+                        "errors": errorHandler(err)
+                    });
+                }
+                return res.json({ data });
+
+            })
+
+
+
 
             /************* images validation ends *************/
-
-
-
-
 
         } catch (err) {
             return handleError(res, err);
