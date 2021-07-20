@@ -70,6 +70,7 @@ const productSchema = new mongoose.Schema({
     },
     onSale: {
         type: Boolean,
+        required: true
     },
     discount: {
         amount: {

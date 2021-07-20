@@ -119,8 +119,15 @@ exports.create = function(req, res) {
                     param: 'onePrice',
                     files: files,
                 });
+            // check if onePrice is either true or false
+            if (!(onePrice.toLowerCase() == 'true' || onePrice.toLowerCase() == 'false'))
+                throw JSON.stringify({
+                    message: 'onePrice must be either true or false',
+                    param: 'onePrice',
+                    files: files,
+                });
             //Assigning the onePrice to the product object
-            product.onePrice = onePrice;
+            product.onePrice = onePrice.toLowerCase();
             /************* onePrice validation ends *************/
 
 
@@ -188,6 +195,27 @@ exports.create = function(req, res) {
 
 
 
+            /************* onSale validation *************/
+            // onSale doesn't exist or isEmpty
+            if (checkRequired(onSale))
+                throw JSON.stringify({
+                    message: 'onSale is required',
+                    param: 'onSale',
+                    files: files,
+                });
+            // check if onSale is either true or false
+            if (!(onSale.toLowerCase() == 'true' || onSale.toLowerCase() == 'false'))
+                throw JSON.stringify({
+                    message: 'onSale must be either true or false',
+                    param: 'onSale',
+                    files: files,
+                });
+            //Assigning the onSale to the product object
+            product.onSale = onSale.toLowerCase();
+            /************* onSale validation ends *************/
+
+
+
 
             /************* images validation *************/
             // Folder to save all the images of the product 
@@ -252,8 +280,8 @@ exports.create = function(req, res) {
                 } catch (err) {
                     if (err.code === 'EEXIST')
                         throw JSON.stringify({
-                            message: 'Directory already exist',
-                            param: 'Image Directory',
+                            message: 'sku already exist',
+                            param: 'sku',
                             files: files,
                         });
                     else if (err.code === 'ENOENT')
