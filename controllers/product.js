@@ -26,10 +26,7 @@ exports.productById = function(req, res, next, id) {
     });
 }
 
-exports.read = function(req, res) {
 
-    return res.json(req.product);
-}
 
 exports.create = function(req, res) {
 
@@ -282,6 +279,11 @@ exports.create = function(req, res) {
     });
 }
 
+
+exports.read = function(req, res) {
+
+    return res.json(req.product);
+}
 
 
 

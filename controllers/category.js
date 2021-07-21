@@ -30,6 +30,10 @@ exports.create = function(req, res) {
     });
 };
 
+exports.read = function(req, res) {
+    return res.json(req.category);
+}
+
 exports.update = function(req, res) {
 
     const category = req.category;
