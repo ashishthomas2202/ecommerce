@@ -401,13 +401,15 @@ exports.update = function(req, res) {
 
 
 
-            // /************* costPrice validation *************/
-            // if (onePrice) {
-            //     check('costPrice', { costPrice, files });
-            //     //Assigning the costPrice to the product object
-            //     product.costPrice = costPrice;
-            // }
-            // /************* costPrice validation ends *************/
+            /************* costPrice validation *************/
+            if (onePrice) {
+                if (!(costPrice === product.costPrice)) {
+                    check('costPrice', { costPrice, files });
+                    //Assigning the costPrice to the product object
+                    product.costPrice = costPrice;
+                }
+            }
+            /************* costPrice validation ends *************/
 
 
 
