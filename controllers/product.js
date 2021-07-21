@@ -6,8 +6,29 @@ const fs = require('fs');
 const Product = require('../models/product');
 const { check } = require('../validators/product');
 const { errorHandler } = require('../helpers/dbErrorHandler');
+const product = require('../models/product');
 
 const tempFolderPath = path.join(__dirname, '../public/products/temp');
+
+exports.productById = function(req, res, next, id) {
+
+    product.findById(id).exec((err, product) => {
+        if (err || !product)
+            return res.status(400).json({
+                "errors": [{
+                    "msg": "Product not found",
+                    "param": "id"
+                }]
+            });
+        req.product = product;
+        next();
+    });
+}
+
+exports.read = function(req, res) {
+
+    return res.json(req.product);
+}
 
 exports.create = function(req, res) {
 
