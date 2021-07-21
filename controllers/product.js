@@ -8,7 +8,8 @@ const { check } = require('../validators/product');
 const { errorHandler } = require('../helpers/dbErrorHandler');
 const product = require('../models/product');
 
-const tempFolderPath = path.join(__dirname, '../public/products/temp');
+const productDirectory = path.join(__dirname, '../public/products');
+const tempFolderPath = path.join(productDirectory, 'temp');
 
 exports.productById = function(req, res, next, id) {
 
@@ -186,7 +187,7 @@ exports.create = function(req, res) {
             /************* images validation *************/
             // Folder to save all the images of the product 
             const folderName = _.kebabCase(sku);
-            let productDir = path.join(__dirname, '../public/products', folderName);
+            let productDir = path.join(productDirectory, folderName);
 
             // array to store images info
             let images = [];
@@ -262,27 +263,54 @@ exports.create = function(req, res) {
             product.images = images;
 
             product.save((err, data) => {
-                if (err) {
-                    removeErrorFiles(files.images, productDir);
-                    return res.status(400).json({
-                        "errors": errorHandler(err)
+                    if (err) {
+                        removeErrorFiles(files.images, productDir);
+                        return res.status(400).json({
+                            "errors": errorHandler(err)
+                        });
+                    }
+                    return res.json({
+                        data,
+                        msg: 'Product successfully created'
                     });
-                }
-                return res.json({ data });
-
-            })
-
-
-
-
-            /************* images validation ends *************/
+                })
+                /************* images validation ends *************/
 
         } catch (err) {
             return handleError(res, err);
         }
-
     });
 }
+
+
+
+
+exports.remove = function(req, res) {
+
+    // variavle to store the product from request
+    let product = req.product
+
+    // trying to remove the product from directory
+    product.remove((err, data) => {
+        if (err)
+            return res.status(400).json({
+                "errors": errorHandler(err)
+            });
+        try {
+            // deleting the product folder and images
+            removeProductFolder(path.join(productDirectory, _.kebabCase(data.sku)));
+            return res.json({
+                data,
+                msg: 'Product successfully deleted'
+            });
+        } catch (err) {
+            return handleError(res, err);
+        }
+    });
+}
+
+
+
 
 function handleError(res, err) {
 
@@ -301,7 +329,6 @@ function handleError(res, err) {
             removeErrorFiles(customError.files.images);
         }
     }
-
     return res.status(400).json({
         "errors": [{
             "msg": customError.message,
@@ -327,7 +354,7 @@ function removeErrorFiles(images, productDir) {
                 deleteList.push(path.join(productDir, productImageName));
             }
 
-
+            // loop to go through each image in temp folder
             for (const image of images) {
 
                 // index of the dot before the image extension
@@ -351,12 +378,10 @@ function removeErrorFiles(images, productDir) {
                         break;
                     }
                 }
-
                 // adding the image path to delete it from the temp folder
                 if (!found)
                     deleteList.push(image.path);
             }
-
         } catch (err) {
             console.log(err);
         }
@@ -375,6 +400,33 @@ function removeErrorFiles(images, productDir) {
     // Product directory exists, Deleting the directory due to the error
     if (productDir)
         deleteDir(productDir);
+}
+
+function removeProductFolder(productDir) {
+
+    let deleteList = [];
+    try {
+        // getting all the file name contained in the directory
+        let productImageNames = fs.readdirSync(productDir);
+
+        //loop to add file names with the total path in the delete list
+        for (const productImageName of productImageNames) {
+            deleteList.push(path.join(productDir, productImageName));
+        }
+        // Deleting the images
+        deleteFiles(deleteList);
+
+        // Deleting the directory due to the error
+        deleteDir(productDir);
+
+    } catch (err) {
+        if (err.code === 'ENOENT')
+            throw JSON.stringify({
+                message: 'Invalid image path',
+                param: 'Image Directory',
+            });
+        console.log(err);
+    }
 }
 
 function deleteFiles(files) {
