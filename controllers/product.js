@@ -392,9 +392,11 @@ exports.update = function(req, res) {
 
 
             // /************* onePrice validation *************/
-            // check('onePrice', { onePrice, files });
-            // //Assigning the onePrice to the product object
-            // product.onePrice = onePrice;
+            if (!(onePrice === product.onePrice)) {
+                check('onePrice', { onePrice, files });
+                //Assigning the onePrice to the product object
+                product.onePrice = onePrice;
+            }
             // /************* onePrice validation ends *************/
 
 
