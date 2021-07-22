@@ -413,13 +413,15 @@ exports.update = function(req, res) {
 
 
 
-            // /************* stickerPrice validation *************/
-            // if (onePrice) {
-            //     check('stickerPrice', { stickerPrice, costPrice, files });
-            //     //Assigning the stickerPrice to the product object
-            //     product.stickerPrice = stickerPrice;
-            // }
-            // /************* stickerPrice validation ends *************/
+            /************* stickerPrice validation *************/
+            if (onePrice) {
+                if (!(stickerPrice === product.stickerPrice)) {
+                    check('stickerPrice', { stickerPrice, costPrice, files });
+                    //Assigning the stickerPrice to the product object
+                    product.stickerPrice = stickerPrice;
+                }
+            }
+            /************* stickerPrice validation ends *************/
 
 
 
