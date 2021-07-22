@@ -471,11 +471,13 @@ exports.update = function(req, res) {
 
 
 
-            // /************* description validation *************/
-            // check('description', { description, files });
-            // //Assigning the description to the product object
-            // product.description = description;
-            // /************* description validation ends *************/
+            /************* description validation *************/
+            if (!(description === product.description)) {
+                check('description', { description, files });
+                //Assigning the description to the product object
+                product.description = description;
+            }
+            /************* description validation ends *************/
 
 
 
