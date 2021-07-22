@@ -7,6 +7,7 @@ const Product = require('../models/product');
 const { check } = require('../validators/product');
 const { errorHandler } = require('../helpers/dbErrorHandler');
 const product = require('../models/product');
+const { dir } = require('console');
 
 const productDirectory = path.join(__dirname, '../public/products');
 const tempFolderPath = path.join(productDirectory, 'temp');
@@ -320,7 +321,7 @@ exports.update = function(req, res) {
             //***************** Parsing Fields *************************
 
             let product = req.product;
-            let { sku, name, ribbon, categoryId, onePrice, costPrice, margin, stickerPrice, onSale, discount, description, additionalInfo, productOptions } = jsonData;
+            let { sku, name, ribbon, categoryId, onePrice, costPrice, margin, stickerPrice, onSale, discount, description, additionalInfo, productOptions, deleteImages } = jsonData;
 
 
             /******** sku validation ********/
@@ -328,6 +329,16 @@ exports.update = function(req, res) {
                 check('sku', { sku, files });
                 try {
                     fs.renameSync(path.join(productDirectory, _.kebabCase(product.sku)), path.join(productDirectory, _.kebabCase(sku)));
+                    // oldDir = _.kebabCase(product.sku)
+                    newDir = _.kebabCase(sku)
+                    for (let image of product.images) {
+                        let secondLastSlashIndex = image.path.lastIndexOf('\\', image.path.lastIndexOf('\\') - 1);
+                        let dirPath = image.path.substring(0, secondLastSlashIndex);
+                        let newPath = path.join(dirPath, newDir, image.name + image.extension);
+                        image.path = newPath;
+                    }
+                    //Assigning the sku value to the product object
+                    product.sku = sku;
                 } catch (err) {
                     console.log(err);
                     if (err.code === 'EEXIST')
@@ -340,16 +351,12 @@ exports.update = function(req, res) {
                         throw JSON.stringify({
                             message: 'Invalid image path',
                             param: 'Image Directory',
-                            productDir: productDir,
                             files: files
                         });
                     else {
                         throw err;
                     }
                 }
-
-                //Assigning the sku value to the product object
-                product.sku = sku;
             }
             /******** sku validation ends ********/
 
@@ -509,81 +516,96 @@ exports.update = function(req, res) {
 
 
 
-            // /************* images validation *************/
-            // // Folder to save all the images of the product 
-            // const folderName = _.kebabCase(sku);
-            // let productDir = path.join(productDirectory, folderName);
+            if (deleteImages) {
+                try {
+                    console.log(deleteImages)
+                    deleteFiles(deleteImages);
+                } catch (err) {
+                    if (err.code === 'ENOENT')
+                        throw JSON.stringify({
+                            message: 'Invalid image path',
+                            param: 'Image Directory',
+                            files: files
+                        });
+                    else {
+                        throw err;
+                    }
+                }
+            }
 
-            // // array to store images info
-            // let images = [];
+            /************* images validation *************/
+            // Folder containing all the previous images of the product 
+            const folderName = _.kebabCase(sku);
+            let productDir = path.join(productDirectory, folderName);
 
-            // // checking if the image is present in the form
-            // if (files.images && files.images != '') {
-            //     try {
-            //         let imageList = [];
-            //         //Creating the directory to store the images
-            //         fs.mkdirSync(productDir);
+            // array to store images info
+            let images = [];
 
-            //         //Loop to go through each image
-            //         for (let image of files.images) {
-            //             // temporary location of the image
-            //             let oldPath = image.path;
-            //             // index of the dot before the image extension
-            //             let indexOfDot = image.name.indexOf('.');
-            //             // Name of the image
-            //             let name = _.kebabCase(image.name.substring(0, indexOfDot));
-            //             // extension of the image
-            //             let extension = image.name.substring(indexOfDot);
-            //             // New location of the image
-            //             let newPath = path.join(tempFolderPath, '../', folderName, name + extension);
+            // checking if the image is present in the form
+            if (files.images && files.images != '') {
+                try {
+                    let imageList = [];
 
-            //             // checking for the file extension
-            //             if (!(extension.toLowerCase() === '.jpg' || extension.toLowerCase() === '.jpeg' || extension.toLowerCase() === '.bmp' || extension.toLowerCase() === '.png' || extension.toLowerCase() === '.gif' || extension.toLowerCase() === '.tiff' || extension.toLowerCase() === '.svg' || extension.toLowerCase() === '.webp')) {
-            //                 throw JSON.stringify({
-            //                     message: 'Invalid image format',
-            //                     param: 'images',
-            //                     productDir: productDir,
-            //                     files: files
-            //                 });
-            //             }
-            //             // adding images info in an array
-            //             imageList.push({
-            //                 oldPath,
-            //                 name,
-            //                 extension,
-            //                 folderName,
-            //                 newPath,
-            //             });
-            //         }
-            //         // loop to go through each image one by one
-            //         for (let image of imageList) {
-            //             //moving image from temp folder to the product folder
-            //             fs.renameSync(image.oldPath, image.newPath);
-            //             images.push({
-            //                 name: image.name,
-            //                 extension: image.extension,
-            //                 path: image.newPath
-            //             });
-            //         }
-            //     } catch (err) {
-            //         if (err.code === 'EEXIST')
-            //             throw JSON.stringify({
-            //                 message: 'sku already exist',
-            //                 param: 'sku',
-            //                 files: files,
-            //             });
-            //         else if (err.code === 'ENOENT')
-            //             throw JSON.stringify({
-            //                 message: 'Invalid image path',
-            //                 param: 'Image Directory',
-            //                 productDir: productDir,
-            //                 files: files
-            //             });
-            //         else {
-            //             throw err;
-            //         }
-            //     }
-            // }
+                    //Loop to go through each image
+                    for (let image of files.images) {
+                        // temporary location of the image
+                        let oldPath = image.path;
+                        // index of the dot before the image extension
+                        let indexOfDot = image.name.indexOf('.');
+                        // Name of the image
+                        let name = _.kebabCase(image.name.substring(0, indexOfDot));
+                        // extension of the image
+                        let extension = image.name.substring(indexOfDot);
+                        // New location of the image
+                        let newPath = path.join(tempFolderPath, '../', folderName, name + extension);
+
+                        // checking for the file extension
+                        if (!(extension.toLowerCase() === '.jpg' || extension.toLowerCase() === '.jpeg' || extension.toLowerCase() === '.bmp' || extension.toLowerCase() === '.png' || extension.toLowerCase() === '.gif' || extension.toLowerCase() === '.tiff' || extension.toLowerCase() === '.svg' || extension.toLowerCase() === '.webp')) {
+                            throw JSON.stringify({
+                                message: 'Invalid image format',
+                                param: 'images',
+                                productDir: productDir,
+                                files: files
+                            });
+                        }
+                        // adding images info in an array
+                        imageList.push({
+                            oldPath,
+                            name,
+                            extension,
+                            folderName,
+                            newPath,
+                        });
+                    }
+                    //         // loop to go through each image one by one
+                    //         for (let image of imageList) {
+                    //             //moving image from temp folder to the product folder
+                    //             fs.renameSync(image.oldPath, image.newPath);
+                    //             images.push({
+                    //                 name: image.name,
+                    //                 extension: image.extension,
+                    //                 path: image.newPath
+                    //             });
+                    //         }
+                } catch (err) {
+                    if (err.code === 'EEXIST')
+                        throw JSON.stringify({
+                            message: 'sku already exist',
+                            param: 'sku',
+                            files: files,
+                        });
+                    else if (err.code === 'ENOENT')
+                        throw JSON.stringify({
+                            message: 'Invalid image path',
+                            param: 'Image Directory',
+                            productDir: productDir,
+                            files: files
+                        });
+                    else {
+                        throw err;
+                    }
+                }
+            }
             // //Assigning the images to the product object
             // product.images = images;
             // removeErrorFiles(files.images);
