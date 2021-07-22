@@ -408,6 +408,9 @@ exports.update = function(req, res) {
                     //Assigning the costPrice to the product object
                     product.costPrice = costPrice;
                 }
+            } else {
+                //Assigning the costPrice to the product object
+                product.costPrice = undefined;
             }
             /************* costPrice validation ends *************/
 
@@ -420,6 +423,9 @@ exports.update = function(req, res) {
                     //Assigning the stickerPrice to the product object
                     product.stickerPrice = stickerPrice;
                 }
+            } else {
+                //Assigning the stickerPrice to the product object
+                product.stickerPrice = undefined;
             }
             /************* stickerPrice validation ends *************/
 
@@ -432,6 +438,9 @@ exports.update = function(req, res) {
                     //Assigning the margin to the product object
                     product.margin = margin;
                 }
+            } else {
+                //Assigning the margin to the product object
+                product.margin = undefined;
             }
             /************* margin validation ends *************/
 
@@ -447,13 +456,18 @@ exports.update = function(req, res) {
 
 
 
-            // /************* discount validation *************/
-            // if (onSale) {
-            //     check('discount', { discount, files });
-            //     //Assigning the discount to the product object
-            //     product.discount = discount;
-            // }
-            // /************* discount validation ends *************/
+            /************* discount validation *************/
+            if (onSale) {
+                if (!(discount === product.discount)) {
+                    check('discount', { discount, files });
+                    //Assigning the discount to the product object
+                    product.discount = discount;
+                }
+            } else {
+                //Assigning the discount to the product object
+                product.discount = undefined;
+            }
+            /************* discount validation ends *************/
 
 
 

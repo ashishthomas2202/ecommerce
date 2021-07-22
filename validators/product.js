@@ -124,7 +124,7 @@ exports.check = function(option, data) {
 
         case 'onSale':
             // onSale doesn't exist or isEmpty
-            if (checkRequired(data.onSale))
+            if (!((typeof data.onSale) == "boolean"))
                 throw JSON.stringify({
                     message: 'onSale is required',
                     param: 'onSale',
