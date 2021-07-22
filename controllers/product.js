@@ -425,13 +425,15 @@ exports.update = function(req, res) {
 
 
 
-            // /************* margin validation *************/
-            // if (onePrice) {
-            //     check('margin', { margin, costPrice, stickerPrice, files });
-            //     //Assigning the margin to the product object
-            //     product.margin = margin;
-            // }
-            // /************* margin validation ends *************/
+            /************* margin validation *************/
+            if (onePrice) {
+                if (!(margin === product.margin)) {
+                    check('margin', { margin, costPrice, stickerPrice, files });
+                    //Assigning the margin to the product object
+                    product.margin = margin;
+                }
+            }
+            /************* margin validation ends *************/
 
 
 
