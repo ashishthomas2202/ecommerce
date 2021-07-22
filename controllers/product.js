@@ -373,9 +373,7 @@ exports.update = function(req, res) {
                     product.ribbon = ribbon;
                 }
             } else {
-                if (product.ribbon) {
-                    product.ribbon = undefined;
-                }
+                product.ribbon = undefined;
             }
             /************* ribbon validation ends *************/
 
