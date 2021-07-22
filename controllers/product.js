@@ -437,11 +437,13 @@ exports.update = function(req, res) {
 
 
 
-            // /************* onSale validation *************/
-            // check('onSale', { onSale, files });
-            // //Assigning the onSale to the product object
-            // product.onSale = onSale;
-            // /************* onSale validation ends *************/
+            /************* onSale validation *************/
+            if (!(onSale === product.onSale)) {
+                check('onSale', { onSale, files });
+                //Assigning the onSale to the product object
+                product.onSale = onSale;
+            }
+            /************* onSale validation ends *************/
 
 
 
