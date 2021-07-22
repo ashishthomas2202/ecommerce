@@ -497,11 +497,16 @@ exports.update = function(req, res) {
 
 
             // /************* productOptions validation *************/
-            // if (productOptions) {
-            //     check('productOptions', { productOptions, onePrice, costPrice, stickerPrice, margin, files });
-            //     //Assigning the productOptions to the product object
-            //     product.productOptions = productOptions;
-            // }
+            if (productOptions) {
+                if (!(productOptions === product.productOptions)) {
+                    check('productOptions', { productOptions, onePrice, costPrice, stickerPrice, margin, files });
+                    //Assigning the productOptions to the product object
+                    product.productOptions = productOptions;
+                }
+            } else {
+                //Assigning the additionalInfo to the product object
+                product.productOptions = undefined;
+            }
             // /************* productOptions validation ends *************/
 
 
