@@ -481,13 +481,18 @@ exports.update = function(req, res) {
 
 
 
-            // /************* additionalInfo validation *************/
-            // if (additionalInfo) {
-            //     check('additionalInfo', { additionalInfo, files });
-            //     //Assigning the additionalInfo to the product object
-            //     product.additionalInfo = additionalInfo;
-            // }
-            // /************* additionalInfo validation ends *************/
+            /************* additionalInfo validation *************/
+            if (additionalInfo) {
+                if (!(additionalInfo === product.additionalInfo)) {
+                    check('additionalInfo', { additionalInfo, files });
+                    //Assigning the additionalInfo to the product object
+                    product.additionalInfo = additionalInfo;
+                }
+            } else {
+                //Assigning the additionalInfo to the product object
+                product.additionalInfo = undefined;
+            }
+            /************* additionalInfo validation ends *************/
 
 
 
