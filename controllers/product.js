@@ -550,9 +550,11 @@ exports.update = function(req, res) {
                 try {
                     deleteFiles(deleteImages);
                 } catch (err) {
+                    // let files = new Object();
+                    // console.log("***********", err);
                     if (err.code === 'ENOENT')
                         throw JSON.stringify({
-                            message: 'Invalid image path',
+                            message: 'Invalid image path for deletion',
                             param: 'Image Directory',
                             files: files
                         });
@@ -626,14 +628,15 @@ exports.update = function(req, res) {
                             param: 'sku',
                             files: files,
                         });
-                    else if (err.code === 'ENOENT')
+                    else if (err.code === 'ENOENT') {
                         throw JSON.stringify({
                             message: 'Invalid image path',
                             param: 'Image Directory',
                             productDir: productDir,
                             files: files
                         });
-                    else {
+                    } else {
+
                         throw err;
                     }
                 }
@@ -649,7 +652,7 @@ exports.update = function(req, res) {
                     }
                     return res.json({
                         data,
-                        msg: 'Product successfully created'
+                        msg: 'Product successfully updated'
                     });
                 })
                 /************* images validation ends *************/
@@ -694,9 +697,9 @@ function handleError(res, err) {
     // parsing the error data
     let customError = JSON.parse(err);
 
+    console.log("******************", customError.files.images);
     // files present
     if (customError.files && customError.files.images) {
-
         // product directory is present
         if (customError.productDir) {
             removeErrorFiles(customError.files.images, customError.productDir);
@@ -731,6 +734,9 @@ function removeErrorFiles(images, productDir) {
                 deleteList.push(path.join(productDir, productImageName));
             }
 
+            if (!Array.isArray(images)) {
+                images = [images];
+            }
             // loop to go through each image in temp folder
             for (const image of images) {
 
@@ -759,12 +765,16 @@ function removeErrorFiles(images, productDir) {
                 if (!found)
                     deleteList.push(image.path);
             }
+
         } catch (err) {
             console.log(err);
         }
     }
     //Product directory doesn't exist
     else {
+        if (!Array.isArray(images)) {
+            images = [images];
+        }
         // Loop to go through every image and add its path in the deleteList
         for (const image of images) {
             deleteList.push(image.path);
@@ -814,7 +824,7 @@ function deleteFiles(files) {
         }
 
     } catch (err) {
-        console.log(err);
+        throw err;
     }
 }
 
