@@ -284,7 +284,36 @@ exports.create = function(req, res) {
 
 exports.read = function(req, res) {
 
-    return res.json(req.product);
+    // coping the product data
+    let product = JSON.parse(JSON.stringify(req.product));
+
+    // check if the onePrice is true
+    if (product.onePrice) {
+        // creating a new key with name salePrice
+        product["salePrice"] = product.costPrice + product.margin;
+        // removing the costPrice and margin from the product
+        product.costPrice = undefined;
+        product.margin = undefined;
+    }
+    // onePrice is false
+    else {
+        // loop to go through each productOptions
+        for (const option of product.productOptions) {
+            // loop to go through each varient
+            for (const varient of option.varients) {
+                // loop to go through each stock
+                for (const stock of varient.stock) {
+                    // creating the new key with name salePrice
+                    stock["salePrice"] = stock.costPrice + stock.margin;
+                    // removing costPrice and margin from the product
+                    stock.costPrice = undefined;
+                    stock.margin = undefined;
+                }
+            }
+        }
+    }
+
+    return res.json(product);
 }
 
 
@@ -501,7 +530,7 @@ exports.update = function(req, res) {
 
 
 
-            // /************* productOptions validation *************/
+            /************* productOptions validation *************/
             if (productOptions) {
                 if (!(productOptions === product.productOptions)) {
                     check('productOptions', { productOptions, onePrice, costPrice, stickerPrice, margin, files });
@@ -512,13 +541,13 @@ exports.update = function(req, res) {
                 //Assigning the additionalInfo to the product object
                 product.productOptions = undefined;
             }
-            // /************* productOptions validation ends *************/
+            /************* productOptions validation ends *************/
 
 
 
+            /************* deleteImages validation *************/
             if (deleteImages) {
                 try {
-                    console.log(deleteImages)
                     deleteFiles(deleteImages);
                 } catch (err) {
                     if (err.code === 'ENOENT')
@@ -532,6 +561,9 @@ exports.update = function(req, res) {
                     }
                 }
             }
+            /************* deleteImages validation ends *************/
+
+
 
             /************* images validation *************/
             // Folder containing all the previous images of the product 
