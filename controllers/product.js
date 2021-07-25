@@ -6,15 +6,13 @@ const fs = require('fs');
 const Product = require('../models/product');
 const { check } = require('../validators/product');
 const { errorHandler } = require('../helpers/dbErrorHandler');
-const product = require('../models/product');
-const { dir, Console } = require('console');
 
 const productDirectory = path.join(__dirname, '../public/products');
 const tempFolderPath = path.join(productDirectory, 'temp');
 
 exports.productById = function(req, res, next, id) {
 
-    product.findById(id).exec((err, product) => {
+    Product.findById(id).exec((err, product) => {
         if (err || !product)
             return res.status(400).json({
                 "errors": [{
@@ -261,7 +259,7 @@ exports.create = function(req, res) {
             /************* images validation ends *************/
 
 
-
+            // saving product
             product.save((err, data) => {
                 if (err) {
                     removeErrorFiles(files.images, productDir);
@@ -343,6 +341,7 @@ exports.update = function(req, res) {
                     fileTransfer: 'false'
                 });
             }
+
 
             let jsonData = JSON.parse(fields.jsonData);
 
@@ -527,9 +526,13 @@ exports.update = function(req, res) {
             if (deleteImages) {
 
                 try {
+                    // deleting the images
                     deleteFiles(deleteImages);
 
+                    // getting the actual images list
                     let imageList = product.images;
+
+                    // removing the info of image deleted from the list
                     for (const imagePath of deleteImages) {
                         for (let image of imageList) {
                             if (image.path === imagePath) {
@@ -537,18 +540,10 @@ exports.update = function(req, res) {
                             }
                         }
                     }
+
+                    // Saving the updated list
                     product.images = imageList;
                 } catch (err) {
-
-                    // if (err.code === 'ENOENT')
-                    //     throw JSON.stringify({
-                    //         message: 'Invalid image path for deletion',
-                    //         param: 'Image Directory',
-                    //         files: files
-                    //     });
-                    // else {
-                    //     throw err;
-                    // }
                     console.log(err)
                 }
             }
@@ -580,17 +575,15 @@ exports.update = function(req, res) {
                         // Name of the image
                         let name = _.kebabCase(image.name.substring(0, indexOfDot));
 
-                        for (const img of product.images)
+                        // checking if the image name already exist
+                        for (const img of product.images) {
                             if (img.name === name) {
                                 name = name + '-' + Date.now();
                                 break;
                             }
-                            // throw JSON.stringify({
-                            //     message: 'Image with same name exist',
-                            //     param: 'images',
-                            //     files: files
-                            // });
-                            // extension of the image
+                        }
+
+                        // extension of the image
                         let extension = image.name.substring(indexOfDot);
                         // New location of the image
                         let newPath = path.join(tempFolderPath, '../', folderName, name + extension);
@@ -642,31 +635,36 @@ exports.update = function(req, res) {
             }
 
 
-
-
+            // sku has been changed
             if (skuChange) {
                 try {
 
+                    // getting the path of the new and old directory
                     let oldDr = path.join(productDirectory, _.kebabCase(oldSku));
                     let newDr = path.join(productDirectory, _.kebabCase(sku));
-                    console.log(oldDr, newDr)
 
                     try {
+                        // creating the new directory
                         fs.mkdirSync(newDr);
+                        // reading all the files from the directory
                         let imageList = fs.readdirSync(oldDr);
 
+                        // loop to move all the images from the old directory to new directory
                         for (const img of imageList) {
                             fs.renameSync(path.join(oldDr, img), path.join(newDr, img));
                         }
 
+                        // removing the old directory
                         fs.rmdirSync(oldDr);
+
                     } catch (err) {
                         console.log(err);
                     }
-                    // oldDir = _.kebabCase(product.sku)
-                    newDir = _.kebabCase(sku)
-                    console.log("#############################")
 
+                    // new directory name
+                    let newDir = _.kebabCase(sku)
+
+                    // loop to go through each image of the product and changing its path from old directory to new directory
                     for (let image of product.images) {
                         let secondLastSlashIndex = image.path.lastIndexOf('\\', image.path.lastIndexOf('\\') - 1);
                         let dirPath = image.path.substring(0, secondLastSlashIndex);
@@ -692,27 +690,22 @@ exports.update = function(req, res) {
                     }
                 }
             }
+            /************* images validation ends *************/
 
 
-
-
-            // //Assigning the images to the product object
-            // product.images = images;
-            // removeErrorFiles(files.images);
+            //saving product
             product.save((err, data) => {
-                    if (err) {
-                        return res.status(400).json({
-                            "errors": errorHandler(err)
-                        });
-                    }
-                    return res.json({
-                        data,
-                        msg: 'Product successfully updated'
+                if (err) {
+                    return res.status(400).json({
+                        "errors": errorHandler(err)
                     });
-                })
-                /************* images validation ends *************/
+                }
+                return res.json({
+                    data,
+                    msg: 'Product successfully updated'
+                });
+            })
 
-            // res.json({ msg: 'successful' })
         } catch (err) {
             return handleError(res, err, files);
         }
