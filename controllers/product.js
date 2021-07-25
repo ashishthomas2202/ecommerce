@@ -7,7 +7,7 @@ const Product = require('../models/product');
 const { check } = require('../validators/product');
 const { errorHandler } = require('../helpers/dbErrorHandler');
 const product = require('../models/product');
-const { dir } = require('console');
+const { dir, Console } = require('console');
 
 const productDirectory = path.join(__dirname, '../public/products');
 const tempFolderPath = path.join(productDirectory, 'temp');
@@ -276,7 +276,7 @@ exports.create = function(req, res) {
             })
 
         } catch (err) {
-            return handleError(res, err);
+            return handleError(res, err, files);
         }
     });
 }
@@ -345,7 +345,9 @@ exports.update = function(req, res) {
             }
 
             let jsonData = JSON.parse(fields.jsonData);
-            console.log(jsonData);
+
+            let skuChange = false;
+            let oldSku = '';
 
             //***************** Parsing Fields *************************
 
@@ -356,36 +358,12 @@ exports.update = function(req, res) {
             /******** sku validation ********/
             if (!(sku === product.sku)) {
                 check('sku', { sku, files });
-                try {
-                    fs.renameSync(path.join(productDirectory, _.kebabCase(product.sku)), path.join(productDirectory, _.kebabCase(sku)));
-                    // oldDir = _.kebabCase(product.sku)
-                    newDir = _.kebabCase(sku)
-                    for (let image of product.images) {
-                        let secondLastSlashIndex = image.path.lastIndexOf('\\', image.path.lastIndexOf('\\') - 1);
-                        let dirPath = image.path.substring(0, secondLastSlashIndex);
-                        let newPath = path.join(dirPath, newDir, image.name + image.extension);
-                        image.path = newPath;
-                    }
-                    //Assigning the sku value to the product object
-                    product.sku = sku;
-                } catch (err) {
-                    console.log(err);
-                    if (err.code === 'EEXIST')
-                        throw JSON.stringify({
-                            message: 'sku already exist',
-                            param: 'sku',
-                            files: files,
-                        });
-                    else if (err.code === 'ENOENT')
-                        throw JSON.stringify({
-                            message: 'Invalid image path',
-                            param: 'Image Directory',
-                            files: files
-                        });
-                    else {
-                        throw err;
-                    }
-                }
+                skuChange = true;
+                oldSku = product.sku;
+
+                //Assigning the sku value to the product object
+                product.sku = sku;
+
             }
             /******** sku validation ends ********/
 
@@ -547,20 +525,31 @@ exports.update = function(req, res) {
 
             /************* deleteImages validation *************/
             if (deleteImages) {
+
                 try {
                     deleteFiles(deleteImages);
-                } catch (err) {
-                    // let files = new Object();
-                    // console.log("***********", err);
-                    if (err.code === 'ENOENT')
-                        throw JSON.stringify({
-                            message: 'Invalid image path for deletion',
-                            param: 'Image Directory',
-                            files: files
-                        });
-                    else {
-                        throw err;
+
+                    let imageList = product.images;
+                    for (const imagePath of deleteImages) {
+                        for (let image of imageList) {
+                            if (image.path === imagePath) {
+                                imageList.remove(image);
+                            }
+                        }
                     }
+                    product.images = imageList;
+                } catch (err) {
+
+                    // if (err.code === 'ENOENT')
+                    //     throw JSON.stringify({
+                    //         message: 'Invalid image path for deletion',
+                    //         param: 'Image Directory',
+                    //         files: files
+                    //     });
+                    // else {
+                    //     throw err;
+                    // }
+                    console.log(err)
                 }
             }
             /************* deleteImages validation ends *************/
@@ -569,7 +558,7 @@ exports.update = function(req, res) {
 
             /************* images validation *************/
             // Folder containing all the previous images of the product 
-            const folderName = _.kebabCase(sku);
+            const folderName = _.kebabCase((skuChange ? oldSku : sku));
             let productDir = path.join(productDirectory, folderName);
 
             // array to store images info
@@ -580,6 +569,8 @@ exports.update = function(req, res) {
                 try {
                     let imageList = [];
 
+                    if (!Array.isArray(files.images))
+                        files.images = [files.images];
                     //Loop to go through each image
                     for (let image of files.images) {
                         // temporary location of the image
@@ -588,7 +579,18 @@ exports.update = function(req, res) {
                         let indexOfDot = image.name.indexOf('.');
                         // Name of the image
                         let name = _.kebabCase(image.name.substring(0, indexOfDot));
-                        // extension of the image
+
+                        for (const img of product.images)
+                            if (img.name === name) {
+                                name = name + '-' + Date.now();
+                                break;
+                            }
+                            // throw JSON.stringify({
+                            //     message: 'Image with same name exist',
+                            //     param: 'images',
+                            //     files: files
+                            // });
+                            // extension of the image
                         let extension = image.name.substring(indexOfDot);
                         // New location of the image
                         let newPath = path.join(tempFolderPath, '../', folderName, name + extension);
@@ -598,7 +600,6 @@ exports.update = function(req, res) {
                             throw JSON.stringify({
                                 message: 'Invalid image format',
                                 param: 'images',
-                                productDir: productDir,
                                 files: files
                             });
                         }
@@ -611,16 +612,16 @@ exports.update = function(req, res) {
                             newPath,
                         });
                     }
-                    //         // loop to go through each image one by one
-                    //         for (let image of imageList) {
-                    //             //moving image from temp folder to the product folder
-                    //             fs.renameSync(image.oldPath, image.newPath);
-                    //             images.push({
-                    //                 name: image.name,
-                    //                 extension: image.extension,
-                    //                 path: image.newPath
-                    //             });
-                    //         }
+                    // loop to go through each image one by one
+                    for (let image of imageList) {
+                        //moving image from temp folder to the product folder
+                        fs.renameSync(image.oldPath, image.newPath);
+                        product.images.push({
+                            name: image.name,
+                            extension: image.extension,
+                            path: image.newPath
+                        });
+                    }
                 } catch (err) {
                     if (err.code === 'EEXIST')
                         throw JSON.stringify({
@@ -632,15 +633,69 @@ exports.update = function(req, res) {
                         throw JSON.stringify({
                             message: 'Invalid image path',
                             param: 'Image Directory',
-                            productDir: productDir,
                             files: files
                         });
                     } else {
-
                         throw err;
                     }
                 }
             }
+
+
+
+
+            if (skuChange) {
+                try {
+
+                    let oldDr = path.join(productDirectory, _.kebabCase(oldSku));
+                    let newDr = path.join(productDirectory, _.kebabCase(sku));
+                    console.log(oldDr, newDr)
+
+                    try {
+                        fs.mkdirSync(newDr);
+                        let imageList = fs.readdirSync(oldDr);
+
+                        for (const img of imageList) {
+                            fs.renameSync(path.join(oldDr, img), path.join(newDr, img));
+                        }
+
+                        fs.rmdirSync(oldDr);
+                    } catch (err) {
+                        console.log(err);
+                    }
+                    // oldDir = _.kebabCase(product.sku)
+                    newDir = _.kebabCase(sku)
+                    console.log("#############################")
+
+                    for (let image of product.images) {
+                        let secondLastSlashIndex = image.path.lastIndexOf('\\', image.path.lastIndexOf('\\') - 1);
+                        let dirPath = image.path.substring(0, secondLastSlashIndex);
+                        let newPath = path.join(dirPath, newDir, image.name + image.extension);
+                        image.path = newPath;
+                    }
+                } catch (err) {
+                    // console.log(err);
+                    if (err.code === 'EEXIST')
+                        throw JSON.stringify({
+                            message: 'sku already exist',
+                            param: 'sku',
+                            files: files,
+                        });
+                    else if (err.code === 'ENOENT')
+                        throw JSON.stringify({
+                            message: 'Invalid image path',
+                            param: 'Image Directory',
+                            files: files
+                        });
+                    else {
+                        throw err;
+                    }
+                }
+            }
+
+
+
+
             // //Assigning the images to the product object
             // product.images = images;
             // removeErrorFiles(files.images);
@@ -659,7 +714,7 @@ exports.update = function(req, res) {
 
             // res.json({ msg: 'successful' })
         } catch (err) {
-            return handleError(res, err);
+            return handleError(res, err, files);
         }
     });
 }
@@ -692,29 +747,40 @@ exports.remove = function(req, res) {
 
 
 
-function handleError(res, err) {
+function handleError(res, err, files) {
 
-    // parsing the error data
-    let customError = JSON.parse(err);
+    try {
+        // parsing the error data
+        let customError = JSON.parse(err);
 
-    console.log("******************", customError.files.images);
-    // files present
-    if (customError.files && customError.files.images) {
-        // product directory is present
-        if (customError.productDir) {
-            removeErrorFiles(customError.files.images, customError.productDir);
+        // files present
+        if (files && files.images) {
+            // product directory is present
+            if (customError.productDir) {
+                removeErrorFiles(files.images, customError.productDir);
+            }
+            // product directory is not present
+            else {
+                removeErrorFiles(files.images);
+            }
         }
-        // product directory is not present
-        else {
-            removeErrorFiles(customError.files.images);
-        }
+        return res.status(400).json({
+            "errors": [{
+                "msg": customError.message,
+                "param": customError.param
+            }]
+        });
+
+    } catch (err) {
+        removeErrorFiles(files.images);
+        return res.status(400).json({
+            "errors": [{
+                "msg": "Invalid JSON request",
+                "param": "JSON Object"
+            }]
+        });
     }
-    return res.status(400).json({
-        "errors": [{
-            "msg": customError.message,
-            "param": customError.param
-        }]
-    });
+
 }
 
 function removeErrorFiles(images, productDir) {
@@ -812,7 +878,6 @@ function removeProductFolder(productDir) {
                 message: 'Invalid image path',
                 param: 'Image Directory',
             });
-        console.log(err);
     }
 }
 

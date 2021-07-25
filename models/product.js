@@ -30,7 +30,6 @@ const productSchema = new mongoose.Schema({
         name: {
             type: String,
             trim: true,
-            maxlength: 30
         },
         extension: {
             type: String,
@@ -40,7 +39,6 @@ const productSchema = new mongoose.Schema({
         path: {
             type: String,
             trim: true,
-            maxlength: 100
         }
     }],
     onePrice: {
