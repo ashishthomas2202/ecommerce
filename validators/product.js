@@ -54,6 +54,17 @@ exports.check = function(option, data) {
                 });
             break;
 
+        case 'sold':
+            // sold is not number
+            if (data.sold && !((typeof data.sold) == "number"))
+                throw JSON.stringify({
+                    message: 'sold must be a number',
+                    param: 'sold',
+                    files: data.files,
+                });
+
+            break;
+
         case 'onePrice':
             // onePrice doesn't exist or isEmpty
             if (!((typeof data.onePrice) == "boolean"))

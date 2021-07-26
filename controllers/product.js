@@ -75,7 +75,7 @@ exports.create = function(req, res) {
             //***************** Parsing Fields *************************
 
             let product = new Product();
-            let { sku, name, ribbon, categoryId, onePrice, costPrice, margin, stickerPrice, onSale, discount, description, additionalInfo, productOptions } = jsonData;
+            let { sku, name, ribbon, categoryId, sold, onePrice, costPrice, margin, stickerPrice, onSale, discount, description, additionalInfo, productOptions } = jsonData;
 
 
             /******** sku validation ********/
@@ -113,6 +113,16 @@ exports.create = function(req, res) {
             //Assigning the categoryId to the product object
             product.categoryId = categoryId;
             /************* categoryId validation ends *************/
+
+
+
+            /************* sold validation *************/
+            check('sold', { sold, files });
+
+            //Assigning the sold to the product object
+            if (sold)
+                product.sold = sold;
+            /************* sold validation ends *************/
 
 
 
@@ -372,7 +382,7 @@ exports.update = function(req, res) {
             //***************** Parsing Fields *************************
 
             let product = req.product;
-            let { sku, name, ribbon, categoryId, onePrice, costPrice, margin, stickerPrice, onSale, discount, description, additionalInfo, productOptions, deleteImages } = jsonData;
+            let { sku, name, ribbon, categoryId, sold, onePrice, costPrice, margin, stickerPrice, onSale, discount, description, additionalInfo, productOptions, deleteImages } = jsonData;
 
 
             /******** sku validation ********/
@@ -425,6 +435,16 @@ exports.update = function(req, res) {
                 product.categoryId = categoryId;
             }
             /************* categoryId validation ends *************/
+
+
+
+            /************* sold validation *************/
+            check('sold', { sold, files });
+
+            //Assigning the sold to the product object
+            if (sold)
+                product.sold = sold;
+            /************* sold validation ends *************/
 
 
 

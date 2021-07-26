@@ -41,6 +41,10 @@ const productSchema = new mongoose.Schema({
             trim: true,
         }
     }],
+    sold: {
+        type: Number,
+        default: 0
+    },
     onePrice: {
         type: Boolean,
         required: true
