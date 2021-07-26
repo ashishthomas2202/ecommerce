@@ -11,6 +11,9 @@ const { errorHandler } = require('../helpers/dbErrorHandler');
 const productDirectory = path.join(__dirname, '../public/products');
 const tempFolderPath = path.join(productDirectory, 'temp');
 
+
+
+
 exports.productById = function(req, res, next, id) {
 
     Product.findById(id).exec((err, product) => {
@@ -25,6 +28,9 @@ exports.productById = function(req, res, next, id) {
         next();
     });
 }
+
+
+
 
 exports.addCategoryId = function(req, res, next) {
 
@@ -41,6 +47,8 @@ exports.addCategoryId = function(req, res, next) {
         next();
     });
 }
+
+
 
 
 exports.create = function(req, res) {
@@ -311,6 +319,8 @@ exports.create = function(req, res) {
 }
 
 
+
+
 exports.read = function(req, res) {
 
     // coping the product data
@@ -344,6 +354,7 @@ exports.read = function(req, res) {
 
     return res.json(product);
 }
+
 
 
 
@@ -759,6 +770,8 @@ exports.update = function(req, res) {
 }
 
 
+
+
 exports.remove = function(req, res) {
 
     // variavle to store the product from request
@@ -781,6 +794,44 @@ exports.remove = function(req, res) {
             return handleError(res, err);
         }
     });
+}
+
+
+
+/**
+ * list by Sell/Arrival
+ * by sell = /products/list?sortBy=sold&order=desc&limit=4
+ * by arrival = /products/list?sortBy=createdAt&order=desc&limit=4
+ * if no parameter are sent, then all products are returned
+ */
+exports.list = function(req, res) {
+
+    let order = req.query.order ? req.query.order : 'asc';
+    let sortBy = req.query.sortBy ? req.query.sortBy : '_id';
+    let limit = req.query.limit ? parseInt(req.query.limit) : undefined;
+
+    Product.find()
+        .populate('categoryId')
+        .sort([
+            [sortBy, order]
+        ])
+        .limit(limit)
+        .exec((err, data) => {
+            if (err || !data)
+                return res.status(400).json({
+                    "errors": [{
+                        "msg": "Products not found",
+                        "param": "list"
+                    }]
+                });
+
+            return res.json({
+                data,
+                msg: 'Product list sent successfully'
+            });
+
+        });
+
 }
 
 
