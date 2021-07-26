@@ -4,6 +4,7 @@ const _ = require('lodash');
 const fs = require('fs');
 
 const Product = require('../models/product');
+const Category = require('../models/category');
 const { check } = require('../validators/product');
 const { errorHandler } = require('../helpers/dbErrorHandler');
 
@@ -25,6 +26,21 @@ exports.productById = function(req, res, next, id) {
     });
 }
 
+exports.addCategoryId = function(req, res, next) {
+
+    Category.findOne({ name: "All Products" }).exec((err, category) => {
+
+        if (err || !category)
+            return res.status(400).json({
+                "errors": [{
+                    "msg": "All Product category not found",
+                    "param": "category"
+                }]
+            });
+        req.categoryId = category._id;
+        next();
+    });
+}
 
 
 exports.create = function(req, res) {
@@ -39,7 +55,8 @@ exports.create = function(req, res) {
     form.uploadDir = tempFolderPath;
 
 
-    // parsing the form data
+    console.log(req.categoryId)
+        // parsing the form data
     form.parse(req, function(err, fields, files) {
         try {
 
@@ -89,6 +106,10 @@ exports.create = function(req, res) {
 
             /************* categoryId validation *************/
             check('categoryId', { categoryId, files });
+
+            // Adding All Products category in the list
+            categoryId.push(req.categoryId);
+
             //Assigning the categoryId to the product object
             product.categoryId = categoryId;
             /************* categoryId validation ends *************/
@@ -395,6 +416,11 @@ exports.update = function(req, res) {
             /************* categoryId validation *************/
             if (!(categoryId === product.categoryId)) {
                 check('categoryId', { categoryId, files });
+
+                console.log(categoryId)
+                if (!(categoryId.includes(req.categoryId)))
+                    categoryId.push(req.categoryId);
+
                 //Assigning the categoryId to the product object
                 product.categoryId = categoryId;
             }

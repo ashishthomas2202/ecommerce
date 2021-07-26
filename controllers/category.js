@@ -1,4 +1,5 @@
 const Category = require('../models/category');
+const Product = require('../models/product');
 const { errorHandler } = require('../helpers/dbErrorHandler');
 
 exports.categoryById = function(req, res, next, id) {
@@ -60,6 +61,9 @@ exports.remove = function(req, res) {
                 "errors": errorHandler(err)
             });
         }
+
+        // Product.findAll
+
         res.json({
             deletedCategory,
             message: "Category deleted successfully"
