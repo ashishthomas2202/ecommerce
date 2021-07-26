@@ -55,15 +55,21 @@ exports.remove = function(req, res) {
 
     const category = req.category;
     console.log(req.category);
+
+    if (category.name == 'All Products')
+        return res.status(400).json({
+            "errors": [{
+                "msg": "Category cannot be deleted",
+                "param": "category"
+            }]
+        });
+
     category.remove(function(err, deletedCategory) {
         if (err) {
             return res.status(400).json({
                 "errors": errorHandler(err)
             });
         }
-
-        // Product.findAll
-
         res.json({
             deletedCategory,
             message: "Category deleted successfully"
@@ -71,3 +77,18 @@ exports.remove = function(req, res) {
     });
 
 };
+
+exports.list = function(req, res) {
+
+    Category.find().exec((err, data) => {
+        if (err) {
+            return res.status(400).json({
+                "errors": errorHandler(err)
+            });
+        }
+
+        res.json({
+            data
+        });
+    });
+}
