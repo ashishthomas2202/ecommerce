@@ -33,7 +33,7 @@ exports.addCategoryId = function(req, res, next) {
         if (err || !category)
             return res.status(400).json({
                 "errors": [{
-                    "msg": "All Product category not found",
+                    "msg": "All Product category not found. Please create a category \"All Products\"",
                     "param": "category"
                 }]
             });
