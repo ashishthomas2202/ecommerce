@@ -46,12 +46,43 @@ exports.check = function(option, data) {
 
         case 'categoryId':
             // categoryId doesn't exist or isEmpty
-            if (checkRequired(data.categoryId))
+            if (checkRequired(data.categoryId)) {
                 throw JSON.stringify({
                     message: 'categoryId is required',
                     param: 'categoryId',
                     files: data.files,
                 });
+            }
+
+            // flags to check if found
+            let otherCategoryFound = false;
+            let allProductCategoryFound = false;
+
+
+            // loop to go through each category 
+            for (let category of data.categoryId) {
+                //category is All Products 
+                if ((String(category) === String(data.allProductCategoryId)))
+                    allProductCategoryFound = true;
+                //category is not All Products 
+                else
+                    otherCategoryFound = true;
+            }
+
+            // category other than All Products not found
+            if (!otherCategoryFound) {
+                throw JSON.stringify({
+                    message: 'categoryId is required other than All Products',
+                    param: 'categoryId',
+                    files: data.files,
+                });
+            }
+
+            // All products categoryId is not in the list 
+            if (!allProductCategoryFound) {
+                // Adding "All Products" category in the list
+                data.categoryId.push(data.allProductCategoryId);
+            }
             break;
 
         case 'sold':

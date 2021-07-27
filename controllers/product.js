@@ -7,6 +7,7 @@ const Product = require('../models/product');
 const Category = require('../models/category');
 const { check } = require('../validators/product');
 const { errorHandler } = require('../helpers/dbErrorHandler');
+const { categoryById } = require('./category');
 
 const productDirectory = path.join(__dirname, '../public/products');
 const tempFolderPath = path.join(productDirectory, 'temp');
@@ -63,8 +64,8 @@ exports.create = function(req, res) {
     form.uploadDir = tempFolderPath;
 
 
-    console.log(req.categoryId)
-        // parsing the form data
+    let allProductCategoryId = req.categoryId;
+    // parsing the form data
     form.parse(req, function(err, fields, files) {
         try {
 
@@ -113,11 +114,9 @@ exports.create = function(req, res) {
 
 
             /************* categoryId validation *************/
-            check('categoryId', { categoryId, files });
+            check('categoryId', { categoryId, allProductCategoryId, files });
 
-            // Adding All Products category in the list
-            categoryId.push(req.categoryId);
-
+            // console.log(categoryId);
             //Assigning the categoryId to the product object
             product.categoryId = categoryId;
             /************* categoryId validation ends *************/
@@ -437,10 +436,6 @@ exports.update = function(req, res) {
             /************* categoryId validation *************/
             if (!(categoryId === product.categoryId)) {
                 check('categoryId', { categoryId, files });
-
-                console.log(categoryId)
-                if (!(categoryId.includes(req.categoryId)))
-                    categoryId.push(req.categoryId);
 
                 //Assigning the categoryId to the product object
                 product.categoryId = categoryId;
@@ -848,19 +843,20 @@ exports.relatedList = function(req, res) {
 
     let limit = req.query.limit ? parseInt(req.query.limit) : undefined;
 
-    let categoryId = [];
+    let categoryIdParam = [];
 
     for (let category of req.product.categoryId) {
         if (!(String(category) === String(req.categoryId))) {
-            categoryId.push(category)
+            categoryIdParam.push({ categoryId: category._id })
         }
     }
 
-    categoryId = categoryId ? categoryId : String(req.categoryId);
+    categoryIdParam = categoryIdParam ? categoryIdParam : String(req.categoryId);
 
+    console.log(categoryIdParam)
     Product.find({
             _id: { $ne: req.product },
-            categoryId: { $in: categoryId }
+            $or: categoryIdParam,
         })
         .limit(limit)
         .populate('categoryId')
