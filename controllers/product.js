@@ -841,6 +841,49 @@ exports.list = function(req, res) {
 
 
 
+/**
+ * 
+ */
+exports.relatedList = function(req, res) {
+
+    let limit = req.query.limit ? parseInt(req.query.limit) : undefined;
+
+    let categoryId = [];
+
+    for (let category of req.product.categoryId) {
+        if (!(String(category) === String(req.categoryId))) {
+            console.log('hi')
+            categoryId.push(category)
+        }
+    }
+
+    categoryId = categoryId ? categoryId : String(req.categoryId);
+
+    Product.find({
+            _id: { $ne: req.product },
+            categoryId: { $in: categoryId }
+        })
+        .limit(limit)
+        .populate('categoryId')
+        .exec((err, data) => {
+            if (err || !data)
+                return res.status(400).json({
+                    "errors": [{
+                        "msg": "Related Products not found",
+                        "param": "related list"
+                    }]
+                });
+
+
+            return res.json({
+                data,
+                msg: 'Related product list sent successfully'
+            });
+        });
+}
+
+
+
 function handleError(res, err, files) {
 
     try {
