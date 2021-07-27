@@ -803,6 +803,9 @@ exports.remove = function(req, res) {
  * by sell = /products/list?sortBy=sold&order=desc&limit=4
  * by arrival = /products/list?sortBy=createdAt&order=desc&limit=4
  * if no parameter are sent, then all products are returned
+ * 
+ * order: asc,desc
+ * sortBy: CreatedAt,sold
  */
 exports.list = function(req, res) {
 
@@ -824,6 +827,7 @@ exports.list = function(req, res) {
                         "param": "list"
                     }]
                 });
+
 
             return res.json({
                 data,
