@@ -852,7 +852,6 @@ exports.relatedList = function(req, res) {
 
     for (let category of req.product.categoryId) {
         if (!(String(category) === String(req.categoryId))) {
-            console.log('hi')
             categoryId.push(category)
         }
     }
