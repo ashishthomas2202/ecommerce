@@ -2,12 +2,20 @@ const formidable = require('formidable');
 const path = require('path');
 const _ = require('lodash');
 const fs = require('fs');
+const AWS = require('aws-sdk');
+
+const s3 = new AWS.S3({
+    accessKeyId: process.env.AWS_ID,
+    secretAccessKey: process.env.AWS_SECRET
+});
+
 
 const Product = require('../models/product');
 const Category = require('../models/category');
 const { check } = require('../validators/product');
 const { errorHandler } = require('../helpers/dbErrorHandler');
-const { categoryById } = require('./category');
+
+
 
 const productDirectory = path.join(__dirname, '../public/products');
 const tempFolderPath = path.join(productDirectory, 'temp');
@@ -218,106 +226,175 @@ exports.create = function(req, res) {
 
 
             /************* images validation *************/
-            // Folder to save all the images of the product 
-            const folderName = _.kebabCase(sku);
-            let productDir = path.join(productDirectory, folderName);
+            // // Folder to save all the images of the product 
+            // const folderName = _.kebabCase(sku);
+            // let productDir = path.join(productDirectory, folderName);
 
-            // array to store images info
-            let images = [];
+            // // array to store images info
+            // let images = [];
 
+            let imageList = [];
             // checking if the image is present in the form
             if (files.images && files.images != '') {
                 try {
-                    let imageList = [];
+
                     //Creating the directory to store the images
-                    fs.mkdirSync(productDir);
+                    // fs.mkdirSync(productDir);
 
                     //Loop to go through each image
                     for (let image of files.images) {
                         // temporary location of the image
-                        let oldPath = image.path;
+                        let location = image.path;
                         // index of the dot before the image extension
                         let indexOfDot = image.name.indexOf('.');
                         // Name of the image
-                        let name = _.kebabCase(image.name.substring(0, indexOfDot));
+                        let name = _.kebabCase(image.name.substring(0, indexOfDot) + Date.now());
                         // extension of the image
                         let extension = image.name.substring(indexOfDot);
-                        // New location of the image
-                        let newPath = path.join(tempFolderPath, '../', folderName, name + extension);
+                        // // New location of the image
+                        // let newPath = path.join(tempFolderPath, '../', folderName, name + extension);
 
                         // checking for the file extension
                         if (!(extension.toLowerCase() === '.jpg' || extension.toLowerCase() === '.jpeg' || extension.toLowerCase() === '.bmp' || extension.toLowerCase() === '.png' || extension.toLowerCase() === '.gif' || extension.toLowerCase() === '.tiff' || extension.toLowerCase() === '.svg' || extension.toLowerCase() === '.webp')) {
                             throw JSON.stringify({
                                 message: 'Invalid image format',
                                 param: 'images',
-                                productDir: productDir,
-                                files: files
+                                // productDir: productDir,
+                                // files: files
                             });
                         }
+
                         // adding images info in an array
                         imageList.push({
-                            oldPath,
+                            location,
                             name,
                             extension,
-                            folderName,
-                            newPath,
+                            type: image.type
                         });
                     }
-                    // loop to go through each image one by one
-                    for (let image of imageList) {
-                        //moving image from temp folder to the product folder
-                        fs.renameSync(image.oldPath, image.newPath);
-                        images.push({
-                            name: image.name,
-                            extension: image.extension,
-                            path: image.newPath
-                        });
-                    }
+
+
                 } catch (err) {
                     if (err.code === 'EEXIST')
                         throw JSON.stringify({
                             message: 'sku already exist',
                             param: 'sku',
-                            files: files,
+                            // files: files,
                         });
                     else if (err.code === 'ENOENT')
                         throw JSON.stringify({
                             message: 'Invalid image path',
                             param: 'Image Directory',
-                            productDir: productDir,
-                            files: files
+                            // productDir: productDir,
+                            // files: files
                         });
                     else {
                         throw err;
                     }
                 }
             }
-            //Assigning the images to the product object
-            product.images = images;
-            /************* images validation ends *************/
 
+            console.log(product.images)
+                /************* images validation ends *************/
 
-            // saving product
-            product.save((err, data) => {
-                if (err) {
-                    removeErrorFiles(files.images, productDir);
-                    return res.status(400).json({
-                        "errors": errorHandler(err)
+            uploadImages(imageList).then(images => {
+
+                //Assigning the images to the product object
+                product.images = images;
+
+                console.log(images);
+                product.save((err, data) => {
+                    if (err) {
+                        return res.status(400).json({
+                            "errors": errorHandler(err)
+                        });
+                    }
+                    return res.json({
+                        data,
+                        msg: 'Product successfully created'
                     });
-                }
-                return res.json({
-                    data,
-                    msg: 'Product successfully created'
                 });
-            })
+            });
+
 
         } catch (err) {
-            return handleError(res, err, files);
+            console.log(err)
+            return handleError(res, err);
         }
     });
 }
 
+async function uploadImages(imageList) {
 
+    let images = [];
+    for (let image of imageList) {
+
+        const fileContent = fs.readFileSync(image.location);
+
+        let productImageUploadParams = {
+            Bucket: process.env.AWS_PRODUCT_IMAGE_BUCKET_NAME,
+            Body: fileContent,
+            Key: image.name + image.extension,
+            ContentType: image.type,
+            ACL: 'public-read'
+        }
+
+        let upload = s3.upload(productImageUploadParams).promise();
+
+        upload.then(data => {
+            // console.log(data)
+            // resolve(data.location);
+            images.push({
+                name: image.name,
+                extension: image.extension,
+                path: data.location
+            })
+        }).catch(err => {
+            console.log(err);
+        })
+
+        // }).then(data => {
+        //         console.log('hi')
+        // images.push({
+        //     name: image.name,
+        //     extension: image.extension,
+        //     path: data.location
+        // })
+        // }).catch(err => {
+        //     console.log(err);
+        // });
+        // }
+    }
+    return images;
+
+}
+
+function uploadFiles(files) {
+
+
+
+    for (let file of files) {
+
+        const fileContent = fs.readFileSync(file.location);
+        console.log(file.type)
+
+        let productImageUploadParams = {
+            Bucket: process.env.AWS_PRODUCT_IMAGE_BUCKET_NAME,
+            Body: fileContent,
+            Key: file.name + file.extension,
+            ContentType: file.type,
+            ACL: 'public-read'
+        }
+
+        s3.upload(productImageUploadParams, function(err, data) {
+            if (err) {
+                // throw err;
+                console.log(err)
+            } else
+                console.log(`File uploaded successfully. ${data.Location}`);
+        });
+    }
+}
 
 
 exports.read = function(req, res) {
@@ -748,6 +825,7 @@ exports.update = function(req, res) {
             //saving product
             product.save((err, data) => {
                 if (err) {
+                    console.log(err);
                     return res.status(400).json({
                         "errors": errorHandler(err)
                     });
@@ -885,17 +963,17 @@ function handleError(res, err, files) {
         // parsing the error data
         let customError = JSON.parse(err);
 
-        // files present
-        if (files && files.images) {
-            // product directory is present
-            if (customError.productDir) {
-                removeErrorFiles(files.images, customError.productDir);
-            }
-            // product directory is not present
-            else {
-                removeErrorFiles(files.images);
-            }
-        }
+        // // files present
+        // if (files && files.images) {
+        //     // product directory is present
+        //     if (customError.productDir) {
+        //         removeErrorFiles(files.images, customError.productDir);
+        //     }
+        //     // product directory is not present
+        //     else {
+        //         removeErrorFiles(files.images);
+        //     }
+        // }
         return res.status(400).json({
             "errors": [{
                 "msg": customError.message,
@@ -904,7 +982,8 @@ function handleError(res, err, files) {
         });
 
     } catch (err) {
-        removeErrorFiles(files.images);
+        console.log(err)
+            // removeErrorFiles(files.images);
         return res.status(400).json({
             "errors": [{
                 "msg": "Invalid JSON request",
