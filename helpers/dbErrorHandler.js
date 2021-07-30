@@ -37,6 +37,7 @@ const uniqueOutput = error => {
 exports.errorHandler = error => {
     let output = [];
     let err = {};
+    // console.log(error.errors)
     if (error.code) {
         switch (error.code) {
             case 11000:
@@ -48,6 +49,15 @@ exports.errorHandler = error => {
         }
         output.push(err);
 
+    } else if (error.errors) {
+        for (let errorName in error.errors) {
+            if (error.errors[errorName].kind == 'unique') {
+                err["msg"] = error.errors[errorName].path + " must be unique";
+                err["param"] = error.errors[errorName].path;
+                output.push(err);
+                err = {};
+            }
+        }
     } else {
         for (let errorName in error.errorors) {
             if (error.errorors[errorName].message) {

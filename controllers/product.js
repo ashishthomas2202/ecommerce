@@ -3,7 +3,7 @@ const path = require('path');
 const _ = require('lodash');
 const fs = require('fs');
 
-const { uploadFile } = require('../s3');
+const { uploadFile, deleteFile } = require('../s3');
 
 const Product = require('../models/product');
 const Category = require('../models/category');
@@ -86,13 +86,13 @@ exports.create = function(req, res) {
             let jsonData = JSON.parse(fields.jsonData);
 
             //***************** Parsing Fields *************************
-
+            let tempImages = files.images
             let product = new Product();
             let { sku, name, ribbon, categoryId, sold, onePrice, costPrice, margin, stickerPrice, onSale, discount, description, additionalInfo, productOptions } = jsonData;
 
 
             /******** sku validation ********/
-            check('sku', { sku, files });
+            check('sku', { sku, files: tempImages });
             //Assigning the sku value to the product object
             product.sku = sku;
             /******** sku validation ends ********/
@@ -100,7 +100,7 @@ exports.create = function(req, res) {
 
 
             /************* name validation *************/
-            check('name', { name, files });
+            check('name', { name, files: tempImages });
             //Assigning the name to the product object
             product.name = name;
             /************* name validation ends *************/
@@ -109,7 +109,7 @@ exports.create = function(req, res) {
 
             /************* ribbon validation *************/
             if (ribbon) {
-                check('ribbon', { ribbon, files });
+                check('ribbon', { ribbon, files: tempImages });
                 //Assigning the ribbon to the product object
                 product.ribbon = ribbon;
             }
@@ -118,7 +118,7 @@ exports.create = function(req, res) {
 
 
             /************* categoryId validation *************/
-            check('categoryId', { categoryId, allProductCategoryId, files });
+            check('categoryId', { categoryId, allProductCategoryId, files: tempImages });
             //Assigning the categoryId to the product object
             product.categoryId = categoryId;
             /************* categoryId validation ends *************/
@@ -126,7 +126,7 @@ exports.create = function(req, res) {
 
 
             /************* sold validation *************/
-            check('sold', { sold, files });
+            check('sold', { sold, files: tempImages });
             //Assigning the sold to the product object
             if (sold)
                 product.sold = sold;
@@ -135,7 +135,7 @@ exports.create = function(req, res) {
 
 
             /************* onePrice validation *************/
-            check('onePrice', { onePrice, files });
+            check('onePrice', { onePrice, files: tempImages });
             //Assigning the onePrice to the product object
             product.onePrice = onePrice;
             /************* onePrice validation ends *************/
@@ -144,7 +144,7 @@ exports.create = function(req, res) {
 
             /************* costPrice validation *************/
             if (onePrice) {
-                check('costPrice', { costPrice, files });
+                check('costPrice', { costPrice, files: tempImages });
                 //Assigning the costPrice to the product object
                 product.costPrice = costPrice;
             }
@@ -154,7 +154,7 @@ exports.create = function(req, res) {
 
             /************* stickerPrice validation *************/
             if (onePrice) {
-                check('stickerPrice', { stickerPrice, costPrice, files });
+                check('stickerPrice', { stickerPrice, costPrice, files: tempImages });
                 //Assigning the stickerPrice to the product object
                 product.stickerPrice = stickerPrice;
             }
@@ -164,7 +164,7 @@ exports.create = function(req, res) {
 
             /************* margin validation *************/
             if (onePrice) {
-                check('margin', { margin, costPrice, stickerPrice, files });
+                check('margin', { margin, costPrice, stickerPrice, files: tempImages });
                 //Assigning the margin to the product object
                 product.margin = margin;
             }
@@ -173,7 +173,7 @@ exports.create = function(req, res) {
 
 
             /************* onSale validation *************/
-            check('onSale', { onSale, files });
+            check('onSale', { onSale, files: tempImages });
             //Assigning the onSale to the product object
             product.onSale = onSale;
             /************* onSale validation ends *************/
@@ -182,7 +182,7 @@ exports.create = function(req, res) {
 
             /************* discount validation *************/
             if (onSale) {
-                check('discount', { discount, files });
+                check('discount', { discount, files: tempImages });
                 //Assigning the discount to the product object
                 product.discount = discount;
             }
@@ -191,7 +191,7 @@ exports.create = function(req, res) {
 
 
             /************* description validation *************/
-            check('description', { description, files });
+            check('description', { description, files: tempImages });
             //Assigning the description to the product object
             product.description = description;
             /************* description validation ends *************/
@@ -200,7 +200,7 @@ exports.create = function(req, res) {
 
             /************* additionalInfo validation *************/
             if (additionalInfo) {
-                check('additionalInfo', { additionalInfo, files });
+                check('additionalInfo', { additionalInfo, files: tempImages });
                 //Assigning the additionalInfo to the product object
                 product.additionalInfo = additionalInfo;
             }
@@ -210,7 +210,7 @@ exports.create = function(req, res) {
 
             /************* productOptions validation *************/
             if (productOptions) {
-                check('productOptions', { productOptions, onePrice, costPrice, stickerPrice, margin, files });
+                check('productOptions', { productOptions, onePrice, costPrice, stickerPrice, margin, files: tempImages });
                 //Assigning the productOptions to the product object
                 product.productOptions = productOptions;
             }
@@ -241,9 +241,9 @@ exports.create = function(req, res) {
                             throw JSON.stringify({
                                 message: 'Invalid image format',
                                 param: 'images',
+                                files: tempImages
                             });
                         }
-
                         // adding images info in an array
                         imageList.push({
                             location,
@@ -252,17 +252,13 @@ exports.create = function(req, res) {
                             type: image.type
                         });
                     }
-
                     // array to store the image data with the aws location
                     let images = [];
-
                     // loop to go through each image
                     for (let image of imageList) {
                         try {
-
                             // uploading files to server
                             const result = await uploadFile(image);
-
                             // adding info to the image array
                             images.push({
                                 name: image.name,
@@ -270,17 +266,18 @@ exports.create = function(req, res) {
                                 path: result.Location
                             })
 
+                            // deleting the images from temp folder
+                            fs.unlinkSync(image.location);
                         } catch (err) {
                             console.log(err);
                         }
                     }
+                    //assigning the image data in the product object
+                    product.images = images;
                 } catch (err) {
                     throw err;
                 }
             }
-
-            //assigning the image data in the product object
-            product.images = images;
             /************* images validation ends *************/
 
 
@@ -288,6 +285,14 @@ exports.create = function(req, res) {
             // saving the product
             product.save((err, data) => {
                 if (err) {
+                    // console.log(product)
+                    for (let image of product.images) {
+                        try {
+                            deleteFile(image);
+                        } catch (err) {
+                            console.log(err);
+                        }
+                    }
                     return res.status(400).json({
                         "errors": errorHandler(err)
                     });
@@ -299,83 +304,12 @@ exports.create = function(req, res) {
             });
 
         } catch (err) {
-            console.log(err)
             return handleError(res, err);
         }
     });
 }
 
-// async function uploadImages(imageList) {
 
-//     let images = [];
-//     for (let image of imageList) {
-
-//         const fileContent = fs.readFileSync(image.location);
-
-//         let productImageUploadParams = {
-//             Bucket: process.env.AWS_PRODUCT_IMAGE_BUCKET_NAME,
-//             Body: fileContent,
-//             Key: image.name + image.extension,
-//             ContentType: image.type,
-//             ACL: 'public-read'
-//         }
-
-//         let upload = s3.upload(productImageUploadParams).promise();
-
-//         upload.then(data => {
-//             // console.log(data)
-//             // resolve(data.location);
-//             images.push({
-//                 name: image.name,
-//                 extension: image.extension,
-//                 path: data.location
-//             })
-//         }).catch(err => {
-//             console.log(err);
-//         })
-
-// }).then(data => {
-//         console.log('hi')
-// images.push({
-//     name: image.name,
-//     extension: image.extension,
-//     path: data.location
-// })
-// }).catch(err => {
-//     console.log(err);
-// });
-// }
-//     }
-//     return images;
-
-// }
-
-// function uploadFiles(files) {
-
-
-
-//     for (let file of files) {
-
-//         const fileContent = fs.readFileSync(file.location);
-//         console.log(file.type)
-
-//         let productImageUploadParams = {
-//             Bucket: process.env.AWS_PRODUCT_IMAGE_BUCKET_NAME,
-//             Body: fileContent,
-//             Key: file.name + file.extension,
-//             ContentType: file.type,
-//             ACL: 'public-read'
-//         }
-
-//         s3.upload(productImageUploadParams, function(err, data) {
-//             if (err) {
-//                 // throw err;
-//                 console.log(err)
-//             } else
-//                 console.log(`File uploaded successfully. ${data.Location}`);
-//         });
-//     }
-// }
 
 
 exports.read = function(req, res) {
@@ -941,20 +875,17 @@ exports.relatedList = function(req, res) {
 function handleError(res, err, files) {
 
     try {
-        // parsing the error data
         let customError = JSON.parse(err);
 
-        // // files present
-        // if (files && files.images) {
-        //     // product directory is present
-        //     if (customError.productDir) {
-        //         removeErrorFiles(files.images, customError.productDir);
-        //     }
-        //     // product directory is not present
-        //     else {
-        //         removeErrorFiles(files.images);
-        //     }
-        // }
+        if (customError.files) {
+            for (let file of customError.files) {
+                try {
+                    fs.unlinkSync(file.path);
+                } catch (err) {
+                    console.log(err);
+                }
+            }
+        }
         return res.status(400).json({
             "errors": [{
                 "msg": customError.message,

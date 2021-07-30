@@ -13,7 +13,7 @@ exports.check = function(option, data) {
                 throw JSON.stringify({
                     message: 'sku must be between 3 to 15 characters',
                     param: 'sku',
-                    files: data.files
+                    files: data.files,
                 });
             break;
 
