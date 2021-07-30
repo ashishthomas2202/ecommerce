@@ -2,13 +2,8 @@ const formidable = require('formidable');
 const path = require('path');
 const _ = require('lodash');
 const fs = require('fs');
-const AWS = require('aws-sdk');
 
-const s3 = new AWS.S3({
-    accessKeyId: process.env.AWS_ID,
-    secretAccessKey: process.env.AWS_SECRET
-});
-
+const { uploadFile } = require('../s3');
 
 const Product = require('../models/product');
 const Category = require('../models/category');
@@ -73,8 +68,9 @@ exports.create = function(req, res) {
 
 
     let allProductCategoryId = req.categoryId;
+
     // parsing the form data
-    form.parse(req, function(err, fields, files) {
+    form.parse(req, async function(err, fields, files) {
         try {
 
             // if there is any error occurs in parsing form
@@ -123,8 +119,6 @@ exports.create = function(req, res) {
 
             /************* categoryId validation *************/
             check('categoryId', { categoryId, allProductCategoryId, files });
-
-            // console.log(categoryId);
             //Assigning the categoryId to the product object
             product.categoryId = categoryId;
             /************* categoryId validation ends *************/
@@ -133,7 +127,6 @@ exports.create = function(req, res) {
 
             /************* sold validation *************/
             check('sold', { sold, files });
-
             //Assigning the sold to the product object
             if (sold)
                 product.sold = sold;
@@ -226,21 +219,12 @@ exports.create = function(req, res) {
 
 
             /************* images validation *************/
-            // // Folder to save all the images of the product 
-            // const folderName = _.kebabCase(sku);
-            // let productDir = path.join(productDirectory, folderName);
 
-            // // array to store images info
-            // let images = [];
-
+            //Array to store the info of the image to be added
             let imageList = [];
             // checking if the image is present in the form
             if (files.images && files.images != '') {
                 try {
-
-                    //Creating the directory to store the images
-                    // fs.mkdirSync(productDir);
-
                     //Loop to go through each image
                     for (let image of files.images) {
                         // temporary location of the image
@@ -251,16 +235,12 @@ exports.create = function(req, res) {
                         let name = _.kebabCase(image.name.substring(0, indexOfDot) + Date.now());
                         // extension of the image
                         let extension = image.name.substring(indexOfDot);
-                        // // New location of the image
-                        // let newPath = path.join(tempFolderPath, '../', folderName, name + extension);
 
                         // checking for the file extension
                         if (!(extension.toLowerCase() === '.jpg' || extension.toLowerCase() === '.jpeg' || extension.toLowerCase() === '.bmp' || extension.toLowerCase() === '.png' || extension.toLowerCase() === '.gif' || extension.toLowerCase() === '.tiff' || extension.toLowerCase() === '.svg' || extension.toLowerCase() === '.webp')) {
                             throw JSON.stringify({
                                 message: 'Invalid image format',
                                 param: 'images',
-                                // productDir: productDir,
-                                // files: files
                             });
                         }
 
@@ -273,49 +253,50 @@ exports.create = function(req, res) {
                         });
                     }
 
+                    // array to store the image data with the aws location
+                    let images = [];
 
-                } catch (err) {
-                    if (err.code === 'EEXIST')
-                        throw JSON.stringify({
-                            message: 'sku already exist',
-                            param: 'sku',
-                            // files: files,
-                        });
-                    else if (err.code === 'ENOENT')
-                        throw JSON.stringify({
-                            message: 'Invalid image path',
-                            param: 'Image Directory',
-                            // productDir: productDir,
-                            // files: files
-                        });
-                    else {
-                        throw err;
+                    // loop to go through each image
+                    for (let image of imageList) {
+                        try {
+
+                            // uploading files to server
+                            const result = await uploadFile(image);
+
+                            // adding info to the image array
+                            images.push({
+                                name: image.name,
+                                extension: image.extension,
+                                path: result.Location
+                            })
+
+                        } catch (err) {
+                            console.log(err);
+                        }
                     }
+                } catch (err) {
+                    throw err;
                 }
             }
 
-            console.log(product.images)
-                /************* images validation ends *************/
+            //assigning the image data in the product object
+            product.images = images;
+            /************* images validation ends *************/
 
-            uploadImages(imageList).then(images => {
 
-                //Assigning the images to the product object
-                product.images = images;
 
-                console.log(images);
-                product.save((err, data) => {
-                    if (err) {
-                        return res.status(400).json({
-                            "errors": errorHandler(err)
-                        });
-                    }
-                    return res.json({
-                        data,
-                        msg: 'Product successfully created'
+            // saving the product
+            product.save((err, data) => {
+                if (err) {
+                    return res.status(400).json({
+                        "errors": errorHandler(err)
                     });
+                }
+                return res.json({
+                    data,
+                    msg: 'Product successfully created'
                 });
             });
-
 
         } catch (err) {
             console.log(err)
@@ -324,77 +305,77 @@ exports.create = function(req, res) {
     });
 }
 
-async function uploadImages(imageList) {
+// async function uploadImages(imageList) {
 
-    let images = [];
-    for (let image of imageList) {
+//     let images = [];
+//     for (let image of imageList) {
 
-        const fileContent = fs.readFileSync(image.location);
+//         const fileContent = fs.readFileSync(image.location);
 
-        let productImageUploadParams = {
-            Bucket: process.env.AWS_PRODUCT_IMAGE_BUCKET_NAME,
-            Body: fileContent,
-            Key: image.name + image.extension,
-            ContentType: image.type,
-            ACL: 'public-read'
-        }
+//         let productImageUploadParams = {
+//             Bucket: process.env.AWS_PRODUCT_IMAGE_BUCKET_NAME,
+//             Body: fileContent,
+//             Key: image.name + image.extension,
+//             ContentType: image.type,
+//             ACL: 'public-read'
+//         }
 
-        let upload = s3.upload(productImageUploadParams).promise();
+//         let upload = s3.upload(productImageUploadParams).promise();
 
-        upload.then(data => {
-            // console.log(data)
-            // resolve(data.location);
-            images.push({
-                name: image.name,
-                extension: image.extension,
-                path: data.location
-            })
-        }).catch(err => {
-            console.log(err);
-        })
+//         upload.then(data => {
+//             // console.log(data)
+//             // resolve(data.location);
+//             images.push({
+//                 name: image.name,
+//                 extension: image.extension,
+//                 path: data.location
+//             })
+//         }).catch(err => {
+//             console.log(err);
+//         })
 
-        // }).then(data => {
-        //         console.log('hi')
-        // images.push({
-        //     name: image.name,
-        //     extension: image.extension,
-        //     path: data.location
-        // })
-        // }).catch(err => {
-        //     console.log(err);
-        // });
-        // }
-    }
-    return images;
+// }).then(data => {
+//         console.log('hi')
+// images.push({
+//     name: image.name,
+//     extension: image.extension,
+//     path: data.location
+// })
+// }).catch(err => {
+//     console.log(err);
+// });
+// }
+//     }
+//     return images;
 
-}
+// }
 
-function uploadFiles(files) {
+// function uploadFiles(files) {
 
 
 
-    for (let file of files) {
+//     for (let file of files) {
 
-        const fileContent = fs.readFileSync(file.location);
-        console.log(file.type)
+//         const fileContent = fs.readFileSync(file.location);
+//         console.log(file.type)
 
-        let productImageUploadParams = {
-            Bucket: process.env.AWS_PRODUCT_IMAGE_BUCKET_NAME,
-            Body: fileContent,
-            Key: file.name + file.extension,
-            ContentType: file.type,
-            ACL: 'public-read'
-        }
+//         let productImageUploadParams = {
+//             Bucket: process.env.AWS_PRODUCT_IMAGE_BUCKET_NAME,
+//             Body: fileContent,
+//             Key: file.name + file.extension,
+//             ContentType: file.type,
+//             ACL: 'public-read'
+//         }
 
-        s3.upload(productImageUploadParams, function(err, data) {
-            if (err) {
-                // throw err;
-                console.log(err)
-            } else
-                console.log(`File uploaded successfully. ${data.Location}`);
-        });
-    }
-}
+//         s3.upload(productImageUploadParams, function(err, data) {
+//             if (err) {
+//                 // throw err;
+//                 console.log(err)
+//             } else
+//                 console.log(`File uploaded successfully. ${data.Location}`);
+//         });
+//     }
+// }
 
 
 exports.read = function(req, res) {
