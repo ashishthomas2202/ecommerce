@@ -84,6 +84,8 @@ exports.create = function(req, res) {
             }
 
             let jsonData = JSON.parse(fields.jsonData);
+            if (!Array.isArray(files.images))
+                files.images = [files.images];
 
             //***************** Parsing Fields *************************
             let tempImages = files.images
@@ -361,8 +363,10 @@ exports.update = function(req, res) {
     form.uploadDir = tempFolderPath;
 
 
+    let allProductCategoryId = req.categoryId;
+
     // parsing the form data
-    form.parse(req, function(err, fields, files) {
+    form.parse(req, async function(err, fields, files) {
         try {
 
             // if there is any error occurs in parsing form
@@ -377,25 +381,21 @@ exports.update = function(req, res) {
 
 
             let jsonData = JSON.parse(fields.jsonData);
-
-            let skuChange = false;
-            let oldSku = '';
-
+            console.log(jsonData)
+            if (!Array.isArray(files.images))
+                files.images = [files.images];
             //***************** Parsing Fields *************************
-
+            let tempImages = files.images
             let product = req.product;
             let { sku, name, ribbon, categoryId, sold, onePrice, costPrice, margin, stickerPrice, onSale, discount, description, additionalInfo, productOptions, deleteImages } = jsonData;
 
 
+
             /******** sku validation ********/
             if (!(sku === product.sku)) {
-                check('sku', { sku, files });
-                skuChange = true;
-                oldSku = product.sku;
-
+                check('sku', { sku, files: tempImages });
                 //Assigning the sku value to the product object
                 product.sku = sku;
-
             }
             /******** sku validation ends ********/
 
@@ -403,7 +403,7 @@ exports.update = function(req, res) {
 
             /************* name validation *************/
             if (!(name === product.name)) {
-                check('name', { name, files });
+                check('name', { name, files: tempImages });
                 //Assigning the name to the product object
                 product.name = name;
             }
@@ -414,7 +414,7 @@ exports.update = function(req, res) {
             /************* ribbon validation *************/
             if (ribbon) {
                 if (!(ribbon === product.ribbon)) {
-                    check('ribbon', { ribbon, files });
+                    check('ribbon', { ribbon, files: tempImages });
                     //Assigning the ribbon to the product object
                     product.ribbon = ribbon;
                 }
@@ -427,8 +427,7 @@ exports.update = function(req, res) {
 
             /************* categoryId validation *************/
             if (!(categoryId === product.categoryId)) {
-                check('categoryId', { categoryId, files });
-
+                check('categoryId', { categoryId, allProductCategoryId, files: tempImages });
                 //Assigning the categoryId to the product object
                 product.categoryId = categoryId;
             }
@@ -437,8 +436,7 @@ exports.update = function(req, res) {
 
 
             /************* sold validation *************/
-            check('sold', { sold, files });
-
+            check('sold', { sold, files: tempImages });
             //Assigning the sold to the product object
             if (sold)
                 product.sold = sold;
@@ -448,7 +446,7 @@ exports.update = function(req, res) {
 
             // /************* onePrice validation *************/
             if (!(onePrice === product.onePrice)) {
-                check('onePrice', { onePrice, files });
+                check('onePrice', { onePrice, files: tempImages });
                 //Assigning the onePrice to the product object
                 product.onePrice = onePrice;
             }
@@ -459,7 +457,7 @@ exports.update = function(req, res) {
             /************* costPrice validation *************/
             if (onePrice) {
                 if (!(costPrice === product.costPrice)) {
-                    check('costPrice', { costPrice, files });
+                    check('costPrice', { costPrice, files: tempImages });
                     //Assigning the costPrice to the product object
                     product.costPrice = costPrice;
                 }
@@ -474,7 +472,7 @@ exports.update = function(req, res) {
             /************* stickerPrice validation *************/
             if (onePrice) {
                 if (!(stickerPrice === product.stickerPrice)) {
-                    check('stickerPrice', { stickerPrice, costPrice, files });
+                    check('stickerPrice', { stickerPrice, costPrice, files: tempImages });
                     //Assigning the stickerPrice to the product object
                     product.stickerPrice = stickerPrice;
                 }
@@ -489,7 +487,7 @@ exports.update = function(req, res) {
             /************* margin validation *************/
             if (onePrice) {
                 if (!(margin === product.margin)) {
-                    check('margin', { margin, costPrice, stickerPrice, files });
+                    check('margin', { margin, costPrice, stickerPrice, files: tempImages });
                     //Assigning the margin to the product object
                     product.margin = margin;
                 }
@@ -503,7 +501,7 @@ exports.update = function(req, res) {
 
             /************* onSale validation *************/
             if (!(onSale === product.onSale)) {
-                check('onSale', { onSale, files });
+                check('onSale', { onSale, files: tempImages });
                 //Assigning the onSale to the product object
                 product.onSale = onSale;
             }
@@ -514,7 +512,7 @@ exports.update = function(req, res) {
             /************* discount validation *************/
             if (onSale) {
                 if (!(discount === product.discount)) {
-                    check('discount', { discount, files });
+                    check('discount', { discount, files: tempImages });
                     //Assigning the discount to the product object
                     product.discount = discount;
                 }
@@ -528,7 +526,7 @@ exports.update = function(req, res) {
 
             /************* description validation *************/
             if (!(description === product.description)) {
-                check('description', { description, files });
+                check('description', { description, files: tempImages });
                 //Assigning the description to the product object
                 product.description = description;
             }
@@ -539,7 +537,7 @@ exports.update = function(req, res) {
             /************* additionalInfo validation *************/
             if (additionalInfo) {
                 if (!(additionalInfo === product.additionalInfo)) {
-                    check('additionalInfo', { additionalInfo, files });
+                    check('additionalInfo', { additionalInfo, files: tempImages });
                     //Assigning the additionalInfo to the product object
                     product.additionalInfo = additionalInfo;
                 }
@@ -554,7 +552,7 @@ exports.update = function(req, res) {
             /************* productOptions validation *************/
             if (productOptions) {
                 if (!(productOptions === product.productOptions)) {
-                    check('productOptions', { productOptions, onePrice, costPrice, stickerPrice, margin, files });
+                    check('productOptions', { productOptions, onePrice, costPrice, stickerPrice, margin, files: tempImages });
                     //Assigning the productOptions to the product object
                     product.productOptions = productOptions;
                 }
@@ -566,176 +564,97 @@ exports.update = function(req, res) {
 
 
 
-            /************* deleteImages validation *************/
-            if (deleteImages) {
-
-                try {
-                    // deleting the images
-                    deleteFiles(deleteImages);
-
-                    // getting the actual images list
-                    let imageList = product.images;
-
-                    // removing the info of image deleted from the list
-                    for (const imagePath of deleteImages) {
-                        for (let image of imageList) {
-                            if (image.path === imagePath) {
-                                imageList.remove(image);
-                            }
-                        }
-                    }
-
-                    // Saving the updated list
-                    product.images = imageList;
-                } catch (err) {
-                    console.log(err)
-                }
-            }
-            /************* deleteImages validation ends *************/
-
-
-
             /************* images validation *************/
-            // Folder containing all the previous images of the product 
-            const folderName = _.kebabCase((skuChange ? oldSku : sku));
-            let productDir = path.join(productDirectory, folderName);
-
             // array to store images info
-            let images = [];
+            let imageList = [];
 
             // checking if the image is present in the form
             if (files.images && files.images != '') {
-                try {
-                    let imageList = [];
 
-                    if (!Array.isArray(files.images))
-                        files.images = [files.images];
+                try {
                     //Loop to go through each image
                     for (let image of files.images) {
                         // temporary location of the image
-                        let oldPath = image.path;
+                        let location = image.path;
                         // index of the dot before the image extension
                         let indexOfDot = image.name.indexOf('.');
                         // Name of the image
-                        let name = _.kebabCase(image.name.substring(0, indexOfDot));
-
-                        // checking if the image name already exist
-                        for (const img of product.images) {
-                            if (img.name === name) {
-                                name = name + '-' + Date.now();
-                                break;
-                            }
-                        }
-
+                        let name = _.kebabCase(image.name.substring(0, indexOfDot) + Date.now());
                         // extension of the image
                         let extension = image.name.substring(indexOfDot);
-                        // New location of the image
-                        let newPath = path.join(tempFolderPath, '../', folderName, name + extension);
 
                         // checking for the file extension
                         if (!(extension.toLowerCase() === '.jpg' || extension.toLowerCase() === '.jpeg' || extension.toLowerCase() === '.bmp' || extension.toLowerCase() === '.png' || extension.toLowerCase() === '.gif' || extension.toLowerCase() === '.tiff' || extension.toLowerCase() === '.svg' || extension.toLowerCase() === '.webp')) {
                             throw JSON.stringify({
                                 message: 'Invalid image format',
                                 param: 'images',
-                                files: files
+                                files: tempImages
                             });
                         }
                         // adding images info in an array
                         imageList.push({
-                            oldPath,
+                            location,
                             name,
                             extension,
-                            folderName,
-                            newPath,
+                            type: image.type
                         });
                     }
-                    // loop to go through each image one by one
+
+                    // array to store the image data with the aws location
+                    let images = [];
+                    // loop to go through each image
                     for (let image of imageList) {
-                        //moving image from temp folder to the product folder
-                        fs.renameSync(image.oldPath, image.newPath);
-                        product.images.push({
-                            name: image.name,
-                            extension: image.extension,
-                            path: image.newPath
-                        });
-                    }
-                } catch (err) {
-                    if (err.code === 'EEXIST')
-                        throw JSON.stringify({
-                            message: 'sku already exist',
-                            param: 'sku',
-                            files: files,
-                        });
-                    else if (err.code === 'ENOENT') {
-                        throw JSON.stringify({
-                            message: 'Invalid image path',
-                            param: 'Image Directory',
-                            files: files
-                        });
-                    } else {
-                        throw err;
-                    }
-                }
-            }
+                        try {
+                            // uploading files to server
+                            const result = await uploadFile(image);
+                            // adding info to the image array
+                            images.push({
+                                name: image.name,
+                                extension: image.extension,
+                                path: result.Location
+                            })
 
-
-            // sku has been changed
-            if (skuChange) {
-                try {
-
-                    // getting the path of the new and old directory
-                    let oldDr = path.join(productDirectory, _.kebabCase(oldSku));
-                    let newDr = path.join(productDirectory, _.kebabCase(sku));
-
-                    try {
-                        // creating the new directory
-                        fs.mkdirSync(newDr);
-                        // reading all the files from the directory
-                        let imageList = fs.readdirSync(oldDr);
-
-                        // loop to move all the images from the old directory to new directory
-                        for (const img of imageList) {
-                            fs.renameSync(path.join(oldDr, img), path.join(newDr, img));
+                            // deleting the images from temp folder
+                            fs.unlinkSync(image.location);
+                        } catch (err) {
+                            console.log(err);
                         }
-
-                        // removing the old directory
-                        fs.rmdirSync(oldDr);
-
-                    } catch (err) {
-                        console.log(err);
                     }
+                    //assigning the image data in the product object
+                    product.images.forEach((element) => {
+                        images.push(element);
+                    });
 
-                    // new directory name
-                    let newDir = _.kebabCase(sku)
-
-                    // loop to go through each image of the product and changing its path from old directory to new directory
-                    for (let image of product.images) {
-                        let secondLastSlashIndex = image.path.lastIndexOf('\\', image.path.lastIndexOf('\\') - 1);
-                        let dirPath = image.path.substring(0, secondLastSlashIndex);
-                        let newPath = path.join(dirPath, newDir, image.name + image.extension);
-                        image.path = newPath;
-                    }
+                    product.images = images;
                 } catch (err) {
-                    // console.log(err);
-                    if (err.code === 'EEXIST')
-                        throw JSON.stringify({
-                            message: 'sku already exist',
-                            param: 'sku',
-                            files: files,
-                        });
-                    else if (err.code === 'ENOENT')
-                        throw JSON.stringify({
-                            message: 'Invalid image path',
-                            param: 'Image Directory',
-                            files: files
-                        });
-                    else {
-                        throw err;
-                    }
+                    throw err;
                 }
             }
             /************* images validation ends *************/
 
+
+
+            /************* deleteImages validation *************/
+            if (deleteImages) {
+
+                if (Array.isArray(deleteImages)) {
+
+                    // getting the actual images list
+                    let imageList = product.images;
+
+                    // removing the info of image deleted from the list
+                    for (const deletedImage of deleteImages) {
+                        for (let image of imageList) {
+                            if (String(deletedImage._id) === String(image._id)) {
+                                imageList.remove(image);
+                            }
+                        }
+                    }
+                    // Saving the updated list
+                    product.images = imageList;
+                }
+            }
+            /************* deleteImages validation ends *************/
 
             //saving product
             product.save((err, data) => {
@@ -745,6 +664,15 @@ exports.update = function(req, res) {
                         "errors": errorHandler(err)
                     });
                 }
+
+                for (let image of deleteImages) {
+                    try {
+                        deleteFile(image)
+                    } catch (err) {
+                        console.log(err);
+                    }
+                }
+
                 return res.json({
                     data,
                     msg: 'Product successfully updated'
@@ -752,7 +680,7 @@ exports.update = function(req, res) {
             })
 
         } catch (err) {
-            return handleError(res, err, files);
+            return handleError(res, err);
         }
     });
 }

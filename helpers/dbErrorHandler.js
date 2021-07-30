@@ -37,7 +37,6 @@ const uniqueOutput = error => {
 exports.errorHandler = error => {
     let output = [];
     let err = {};
-    // console.log(error.errors)
     if (error.code) {
         switch (error.code) {
             case 11000:
