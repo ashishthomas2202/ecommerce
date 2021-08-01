@@ -78,12 +78,20 @@ exports.create = function(req, res) {
                 throw JSON.stringify({
                     message: 'Image could not be uploaded',
                     param: 'images',
-                    files: files,
-                    fileTransfer: 'false'
+                    files: files.images
+                });
+            }
+            let jsonData = {};
+            try {
+                jsonData = JSON.parse(fields.jsonData);
+            } catch (err) {
+                throw JSON.stringify({
+                    message: 'Invalid JSON request',
+                    param: 'JSON Object',
+                    files: files.images
                 });
             }
 
-            let jsonData = JSON.parse(fields.jsonData);
             if (!Array.isArray(files.images))
                 files.images = [files.images];
 
@@ -306,6 +314,8 @@ exports.create = function(req, res) {
             });
 
         } catch (err) {
+
+            console.log(err)
             return handleError(res, err);
         }
     });
@@ -374,14 +384,21 @@ exports.update = function(req, res) {
                 throw JSON.stringify({
                     message: 'Image could not be uploaded',
                     param: 'images',
-                    files: files,
-                    fileTransfer: 'false'
+                    files: files.images
                 });
             }
 
+            let jsonData = {};
+            try {
+                jsonData = JSON.parse(fields.jsonData);
+            } catch (err) {
+                throw JSON.stringify({
+                    message: 'Invalid JSON request',
+                    param: 'JSON Object',
+                    files: files.images
+                });
+            }
 
-            let jsonData = JSON.parse(fields.jsonData);
-            console.log(jsonData)
             if (!Array.isArray(files.images))
                 files.images = [files.images];
             //***************** Parsing Fields *************************
@@ -620,11 +637,11 @@ exports.update = function(req, res) {
                             console.log(err);
                         }
                     }
-                    //assigning the image data in the product object
+                    // appending image list of product
                     product.images.forEach((element) => {
                         images.push(element);
                     });
-
+                    //assigning the image data in the product object
                     product.images = images;
                 } catch (err) {
                     throw err;
@@ -638,10 +655,8 @@ exports.update = function(req, res) {
             if (deleteImages) {
 
                 if (Array.isArray(deleteImages)) {
-
                     // getting the actual images list
                     let imageList = product.images;
-
                     // removing the info of image deleted from the list
                     for (const deletedImage of deleteImages) {
                         for (let image of imageList) {
@@ -655,6 +670,8 @@ exports.update = function(req, res) {
                 }
             }
             /************* deleteImages validation ends *************/
+
+
 
             //saving product
             product.save((err, data) => {
@@ -701,7 +718,13 @@ exports.remove = function(req, res) {
             });
         try {
             // deleting the product folder and images
-            removeProductFolder(path.join(productDirectory, _.kebabCase(data.sku)));
+            for (let image of data.images) {
+                try {
+                    deleteFile(image)
+                } catch (err) {
+                    console.log(err);
+                }
+            }
             return res.json({
                 data,
                 msg: 'Product successfully deleted'
@@ -774,7 +797,6 @@ exports.relatedList = function(req, res) {
 
     categoryIdParam = categoryIdParam ? categoryIdParam : String(req.categoryId);
 
-    console.log(categoryIdParam)
     Product.find({
             _id: { $ne: req.product },
             $or: categoryIdParam,
@@ -800,7 +822,7 @@ exports.relatedList = function(req, res) {
 
 
 
-function handleError(res, err, files) {
+function handleError(res, err) {
 
     try {
         let customError = JSON.parse(err);
@@ -822,132 +844,11 @@ function handleError(res, err, files) {
         });
 
     } catch (err) {
-        console.log(err)
-            // removeErrorFiles(files.images);
         return res.status(400).json({
             "errors": [{
                 "msg": "Invalid JSON request",
                 "param": "JSON Object"
             }]
         });
-    }
-
-}
-
-function removeErrorFiles(images, productDir) {
-
-    // array to store the files to be deleted
-    let deleteList = [];
-
-    // Product directory exists
-    if (productDir) {
-        try {
-
-            // getting all the file name contained in the directory
-            let productImageNames = fs.readdirSync(productDir);
-
-            //loop to add file names with the total path in the delete list
-            for (const productImageName of productImageNames) {
-                deleteList.push(path.join(productDir, productImageName));
-            }
-
-            if (!Array.isArray(images)) {
-                images = [images];
-            }
-            // loop to go through each image in temp folder
-            for (const image of images) {
-
-                // index of the dot before the image extension
-                let indexOfDot = image.name.indexOf('.');
-                // Name of the image
-                let name = _.kebabCase(image.name.substring(0, indexOfDot));
-
-                let found = false;
-
-                // loop to go through each product name
-                for (const productImageName of productImageNames) {
-
-                    // index of the dot before the image extension
-                    let dotIndex = productImageName.indexOf('.');
-                    // Name of the image
-                    let productName = _.kebabCase(productImageName.substring(0, dotIndex));
-
-                    // image was moved from temp folder to product directory
-                    if (name === productName) {
-                        found = true;
-                        break;
-                    }
-                }
-                // adding the image path to delete it from the temp folder
-                if (!found)
-                    deleteList.push(image.path);
-            }
-
-        } catch (err) {
-            console.log(err);
-        }
-    }
-    //Product directory doesn't exist
-    else {
-        if (!Array.isArray(images)) {
-            images = [images];
-        }
-        // Loop to go through every image and add its path in the deleteList
-        for (const image of images) {
-            deleteList.push(image.path);
-        }
-    }
-
-    // Deleting the images
-    deleteFiles(deleteList);
-
-    // Product directory exists, Deleting the directory due to the error
-    if (productDir)
-        deleteDir(productDir);
-}
-
-function removeProductFolder(productDir) {
-
-    let deleteList = [];
-    try {
-        // getting all the file name contained in the directory
-        let productImageNames = fs.readdirSync(productDir);
-
-        //loop to add file names with the total path in the delete list
-        for (const productImageName of productImageNames) {
-            deleteList.push(path.join(productDir, productImageName));
-        }
-        // Deleting the images
-        deleteFiles(deleteList);
-
-        // Deleting the directory due to the error
-        deleteDir(productDir);
-
-    } catch (err) {
-        if (err.code === 'ENOENT')
-            throw JSON.stringify({
-                message: 'Invalid image path',
-                param: 'Image Directory',
-            });
-    }
-}
-
-function deleteFiles(files) {
-
-    try {
-        for (const file of files) {
-            fs.unlinkSync(file);
-        }
-
-    } catch (err) {
-        throw err;
-    }
-}
-
-function deleteDir(path) {
-    try {
-        fs.rmdirSync(path);
-    } catch (err) {
-        console.log(err);
     }
 }
